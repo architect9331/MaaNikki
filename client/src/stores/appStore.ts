@@ -1711,6 +1711,11 @@ export const useAppStore = create<AppState>()(
     restoreBackendStates: (states, options) =>
       set((currentState) => {
         const skipRunning = options?.skipRunningState ?? false;
+        const preserveRunningIds = new Set(options?.preserveRunningInstanceIds ?? []);
+        if (typeof document !== 'undefined') {
+          const startingId = document.documentElement.dataset.maanikkiStartingInstance;
+          if (startingId) preserveRunningIds.add(startingId);
+        }
         const connectionStatus: Record<string, ConnectionStatus> = {};
         const resourceLoaded: Record<string, boolean> = {};
         const taskStatus: Record<string, TaskStatus | null> = {};
@@ -1724,7 +1729,9 @@ export const useAppStore = create<AppState>()(
         const mappedInstances = currentState.instances.map((instance) => {
           const backendState = states.instances[instance.id];
           if (backendState) {
-            const isRunning = skipRunning ? instance.isRunning : backendState.isRunning;
+            const preserveRunning = preserveRunningIds.has(instance.id) && instance.isRunning;
+            const isRunning =
+              skipRunning || preserveRunning ? instance.isRunning : backendState.isRunning;
             if (isRunning !== instance.isRunning) {
               instancesChanged = true;
               return { ...instance, isRunning };
@@ -1759,7 +1766,10 @@ export const useAppStore = create<AppState>()(
             instanceCurrentTaskIndex[instanceId] = trs.currentTaskIndex ?? 0;
 
             // 映射 overall_status → instanceTaskStatus
-            if (skipRunning) {
+            const preserveTaskRunning =
+              preserveRunningIds.has(instanceId) &&
+              currentState.instances.some((item) => item.id === instanceId && item.isRunning);
+            if (skipRunning || preserveTaskRunning) {
               const existing = currentState.instanceTaskStatus[instanceId];
               if (existing) {
                 taskStatus[instanceId] = existing;

@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { useAppStore } from '@/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
 import { isControllerAllowed, isResourceAllowed, isTaskCompatible } from '@/stores/helpers';
-import { maaService } from '@/services/maaService';
+import { maaService, TaskStartRejectedError } from '@/services/maaService';
 import { buildTaskOptionSummary } from '@/services/telemetryService';
 import { collectPasswordPlaintextsFromRunnableTasks } from '@/utils/passwordOptionValues';
 import clsx from 'clsx';
@@ -86,6 +86,8 @@ import {
 
 const log = loggers.task;
 const PRE_ACTION_CANCELLED_ERROR = 'MXU_PRE_ACTION_CANCELLED';
+// 跨所有启动入口（开始按钮、任务卡片、快捷键、托盘、定时调度、页面切换重挂载）共享的启动互斥锁
+let activeStartInFlight = false;
 
 /**
  * 发现 Linux 控制器所需的全部设备并构建运行时配置。
@@ -409,10 +411,19 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         return failStart(t('dashboard.noEnabledTasks'));
       }
 
-      // 检查是否正在运行
-      if (targetInstance.isRunning || preActionControlledInstanceIdRef.current === targetId) {
+      // 检查是否正在运行或已有启动流程在进行（以 store 最新状态为准，防止跨入口竞态）
+      const latestTarget = useAppStore.getState().instances.find((i) => i.id === targetId);
+      if (
+        activeStartInFlight ||
+        latestTarget?.isRunning ||
+        targetInstance.isRunning ||
+        preActionControlledInstanceIdRef.current === targetId
+      ) {
         return failStart(t('taskList.autoConnect.alreadyRunning'));
       }
+
+      activeStartInFlight = true;
+      try {
 
       // 获取控制器和资源配置
       const controllerName = selectedController[targetId] || projectInterface?.controller[0]?.name;
@@ -524,6 +535,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
       }
 
       let releaseExploration: (() => void) | undefined;
+      let backendStartAttempted = false;
       try {
         if (wardrobeBusy()) throw new Error('衣柜正在读取，请先停止衣柜读取。');
         if (fishingBusy()) throw new Error('正在钓鱼，请先停止钓鱼。');
@@ -1336,6 +1348,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         // 任务可能在 startTasks 返回前就瞬时结束，先启动全局回调缓存再提交。
         await startGlobalCallbackListener();
 
+        backendStartAttempted = true;
         const startedTaskIds = await maaService.startTasks(
           targetId,
           taskConfigs,
@@ -1353,6 +1366,10 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
             projectInterface?.option ?? {},
           ),
         );
+
+        // 后端已确认提交任务，确保前端运行状态不被启动期间其他实例的旧快照覆盖
+        updateInstance(targetId, { isRunning: true });
+        setInstanceTaskStatus(targetId, 'Running');
 
         startedTaskIds.forEach((maaTaskId, index) => {
           const runnable = runnableTasks[index];
@@ -1397,8 +1414,19 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
           });
         }
 
+        const rejectedBeforeSubmit =
+          err instanceof TaskStartRejectedError ||
+          !backendStartAttempted ||
+          errMsg.includes('请先停止正在运行的任务组');
+        const backendStillRunning = await maaService.isRunning(targetId).catch(() => false);
+
         const failedAgentConfigs = normalizeAgentConfigs(projectInterface?.agent);
-        if (failedAgentConfigs && failedAgentConfigs.length > 0) {
+        if (
+          failedAgentConfigs &&
+          failedAgentConfigs.length > 0 &&
+          !rejectedBeforeSubmit &&
+          !backendStillRunning
+        ) {
           if (!cancelled) {
             for (let i = 0; i < failedAgentConfigs.length; i++) {
               const agentCfg = failedAgentConfigs[i];
@@ -1421,10 +1449,15 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
           }
         }
 
-        updateInstance(targetId, { isRunning: false });
-        setInstanceTaskStatus(targetId, cancelled ? null : 'Failed');
-        setInstanceCurrentTaskId(targetId, null);
-        clearScheduleExecution(targetId);
+        if (backendStillRunning) {
+          updateInstance(targetId, { isRunning: true });
+          setInstanceTaskStatus(targetId, 'Running');
+        } else {
+          updateInstance(targetId, { isRunning: false });
+          setInstanceTaskStatus(targetId, cancelled ? null : 'Failed');
+          setInstanceCurrentTaskId(targetId, null);
+          clearScheduleExecution(targetId);
+        }
         if (cancelled) {
           lastStartCancelledRef.current = true;
           setIsStopping(false);
@@ -1433,6 +1466,9 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         return false;
       } finally {
         releaseExploration?.();
+      }
+      } finally {
+        activeStartInFlight = false;
       }
     },
     [
@@ -1504,7 +1540,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
   useEffect(() => {
     taskStartService.setHandler(async (instance, options) => {
       // 与开始按钮共用同一把锁，避免连点任务卡片上的运行按钮重复启动
-      if (startingRef.current) return false;
+      if (startingRef.current || activeStartInFlight) return false;
       startingRef.current = true;
       try {
         return await launchWithFeedback(instance, options);
@@ -1628,11 +1664,17 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
   const handleStartStop = async (skipPreflight = false) => {
     if (!instance) return;
 
-    if (isStartStopRunning) {
+    const latestInstance =
+      useAppStore.getState().instances.find((i) => i.id === instance.id) ?? instance;
+    const runningNow =
+      Boolean(latestInstance.isRunning) ||
+      preActionControlledInstanceIdRef.current === latestInstance.id;
+
+    if (runningNow) {
       // 停止任务
-      const stoppingPreAction = preActionControlledInstanceIdRef.current === instance.id;
+      const stoppingPreAction = preActionControlledInstanceIdRef.current === latestInstance.id;
       try {
-        const stopped = await performStop(instance.id);
+        const stopped = await performStop(latestInstance.id);
         // 前置程序只是收到停止请求，按钮会保持「停止中」；其余情况超时要告诉用户仍在等待
         if (!stopped && !stoppingPreAction) toast.warning(t('taskList.stopPending'));
       } catch (err) {
@@ -1647,13 +1689,13 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
       }
 
       // isStarting 是 state，disabled 要等重新渲染才生效，挡不住同一 tick 内的连点
-      if (startingRef.current) return;
+      if (startingRef.current || activeStartInFlight) return;
       startingRef.current = true;
 
       try {
         // 手动启动时先做一次运行前检查；定时和快捷键启动不弹窗
         if (!skipPreflight) {
-          const issues = await preflightIssues(instance);
+          const issues = await preflightIssues(latestInstance);
           if (issues.length) {
             setPreflight(issues);
             return;
@@ -1667,7 +1709,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
           return;
         }
 
-        await launchWithFeedback(instance);
+        await launchWithFeedback(latestInstance);
       } catch (err) {
         log.error('启动前检查异常:', err);
       } finally {
@@ -1692,7 +1734,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         detail?.onSettled?.(started);
       };
 
-      if (hotkeyStartingRef.current) {
+      if (hotkeyStartingRef.current || startingRef.current || activeStartInFlight) {
         notifySettled(false);
         return;
       }

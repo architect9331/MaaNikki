@@ -625,6 +625,13 @@ pub async fn start_tasks_impl(
 
     let reconnect_config = {
         let mut instances = maa_state.instances.lock().map_err(|e| e.to_string())?;
+        if reset_state
+            && instances
+                .values()
+                .any(|inst| inst.tasker.as_ref().is_some_and(|t| t.running()))
+        {
+            return Err("请先停止正在运行的任务组，再启动日常或辅助功能。".to_string());
+        }
         instances.get_mut(&instance_id).and_then(|inst| {
             inst.start_generation = inst.start_generation.wrapping_add(1);
             if inst.controller_stopped {
@@ -673,6 +680,13 @@ pub async fn start_tasks_impl(
         debug!("[start_tasks] Acquiring instances lock...");
         let mut instances = maa_state.instances.lock().map_err(|e| e.to_string())?;
         debug!("[start_tasks] Instances lock acquired");
+        if reset_state
+            && instances
+                .values()
+                .any(|inst| inst.tasker.as_ref().is_some_and(|t| t.running()))
+        {
+            return Err("请先停止正在运行的任务组，再启动日常或辅助功能。".to_string());
+        }
         let instance = instances
             .get_mut(&instance_id)
             .ok_or("Instance not found")?;

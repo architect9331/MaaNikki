@@ -25,6 +25,14 @@ import { isDeveloperTask, ROUTE_TEST_ENTRY } from '@/utils/developerTasks';
 
 const log = loggers.maa;
 
+/** 任务尚未提交至后端即被前置守卫拒绝（如已有任务运行或启动中）。 */
+export class TaskStartRejectedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'TaskStartRejectedError';
+  }
+}
+
 function localizeControllerError(error: unknown): unknown {
   const message = error instanceof Error ? error.message : String(error);
   if (message.includes('MACOS_PERMISSIONS_REQUIRED')) {
@@ -534,24 +542,25 @@ export const maaService = {
     logRedactSecrets?: string[],
   ): Promise<number[]> {
     if (isUpdateInstalledPendingRestart()) {
-      throw new Error('软件更新已安装完成，请先重启客户端后再运行任务。');
+      throw new TaskStartRejectedError('软件更新已安装完成，请先重启客户端后再运行任务。');
     }
     const { devMode, projectInterface, helpImproveRouteTelemetry, helpImproveBlessingStats } = useAppStore.getState();
     const hasDeveloperTask = tasks.some((task) => task.entry === ROUTE_TEST_ENTRY ||
       isDeveloperTask(projectInterface?.task.find((def) => def.entry === task.entry)));
     if (hasDeveloperTask && !devMode) {
-      throw new Error('路线测试需要开启设置中的开发模式。');
+      throw new TaskStartRejectedError('路线测试需要开启设置中的开发模式。');
     }
     if (document.documentElement.dataset.maanikkiStarting === 'yes')
-      throw new Error('已有任务正在启动，请稍候。');
+      throw new TaskStartRejectedError('已有任务正在启动，请稍候。');
     document.documentElement.dataset.maanikkiStarting = 'yes';
+    document.documentElement.dataset.maanikkiStartingInstance = instanceId;
     try {
       const state = await this.getAllStates();
-      if (!state) throw new Error('无法确认任务运行状态，请稍后重试。');
+      if (!state) throw new TaskStartRejectedError('无法确认任务运行状态，请稍后重试。');
       // pendingTaskIds 保留整轮执行历史，结束/停止后仍可能非空。
       // 是否还在执行以 MaaTaskerRunning 的实时结果为准。
       if (Object.values(state.instances).some(item => item.isRunning))
-        throw new Error('请先停止正在运行的任务组，再启动日常或辅助功能。');
+        throw new TaskStartRejectedError('请先停止正在运行的任务组，再启动日常或辅助功能。');
     piEnvs = { ...piEnvs, PI_MAANIKKI_DEV_MODE: devMode ? '1' : '0', PI_MAANIKKI_ROUTE_TELEMETRY: helpImproveRouteTelemetry ? '1' : '0', PI_MAANIKKI_BLESSING_STATS: helpImproveBlessingStats ? '1' : '0', PI_MAANIKKI_RUN_PLAN: JSON.stringify({
       schema_version: 1, id: crypto.randomUUID(), instance: instanceId,
       entries: tasks.map(task => task.entry),
@@ -601,7 +610,10 @@ export const maaService = {
     });
     log.info('任务已提交, taskIds:', taskIds);
     return taskIds;
-    } finally { delete document.documentElement.dataset.maanikkiStarting; }
+    } finally {
+      delete document.documentElement.dataset.maanikkiStarting;
+      delete document.documentElement.dataset.maanikkiStartingInstance;
+    }
   },
 
   /**

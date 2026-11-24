@@ -346,7 +346,7 @@ export interface AppState {
       cachedWlrootsSockets: string[];
       cachedGamescopeInstances: GamescopeInstance[];
     },
-    options?: { skipRunningState?: boolean },
+    options?: { skipRunningState?: boolean; preserveRunningInstanceIds?: string[] },
   ) => void;
 
   // 右侧面板折叠状态

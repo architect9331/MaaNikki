@@ -1402,10 +1402,22 @@ function App() {
   const refreshBackendStates = useCallback(async (syncRunning: boolean): Promise<boolean> => {
     if (syncRunning) pendingRunningSyncRef.current = true;
     const seq = ++backendStatesSeqRef.current;
+    const startingBefore =
+      typeof document !== 'undefined'
+        ? document.documentElement.dataset.maanikkiStartingInstance
+        : undefined;
     const backendStates = await maaService.getAllStates();
     if (seq !== backendStatesSeqRef.current || !backendStates) return false;
+    const startingAfter =
+      typeof document !== 'undefined'
+        ? document.documentElement.dataset.maanikkiStartingInstance
+        : undefined;
+    const preserveRunningInstanceIds = [startingBefore, startingAfter].filter(
+      (id): id is string => Boolean(id),
+    );
     useAppStore.getState().restoreBackendStates(backendStates, {
       skipRunningState: !pendingRunningSyncRef.current,
+      preserveRunningInstanceIds,
     });
     pendingRunningSyncRef.current = false;
     return true;
@@ -1826,7 +1838,8 @@ function App() {
       let registeringKey = startKey;
       try {
         const { register } = await getGlobalShortcut();
-        await register(toTauriKey(startKey), () => {
+        await register(toTauriKey(startKey), (event) => {
+          if (event.state !== 'Pressed') return;
           const capture = document.documentElement.dataset.maanikkiKeyCapture;
           if (capture === 'active' || Number(capture) > Date.now()) return;
           const now = Date.now();
@@ -1841,9 +1854,10 @@ function App() {
         registeringKey = stopKey;
         // 避免重复注册相同的键
         if (stopKey !== startKey) {
-          await register(toTauriKey(stopKey), () => {
+          await register(toTauriKey(stopKey), (event) => {
+            if (event.state !== 'Pressed') return;
             const capture = document.documentElement.dataset.maanikkiKeyCapture;
-          if (capture === 'active' || Number(capture) > Date.now()) return;
+            if (capture === 'active' || Number(capture) > Date.now()) return;
             document.dispatchEvent(
               new CustomEvent('mxu-stop-tasks', {
                 detail: { source: 'global-hotkey', combo: stopKey },
