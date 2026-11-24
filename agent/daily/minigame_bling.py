@@ -65,7 +65,7 @@ COURSE_TIMER_INITIAL_SECONDS = 25.0
 COURSE_TIMER_MIN_VALID_SECONDS = 15.0
 # Strictly below 25.0 so a static 00:25.000 shown before/during 3-2-1 cannot trigger early.
 COURSE_TIMER_MAX_TICKING_SECONDS = 24.95
-COURSE_TIMER_POLL_INTERVAL_SECONDS = 0.10
+COURSE_TIMER_POLL_INTERVAL_SECONDS = 0.05
 COURSE_TIMER_POLL_START_NORMAL_SECONDS = 3.0
 COURSE_TIMER_POLL_START_RETRY_SECONDS = 1.0
 # Extend polling when the pre-unlock 00:25.000 banner is positively visible so slower
@@ -87,20 +87,21 @@ CLEAR_REWARD_BLING = 700
 COURSE_FALLBACK_START_WAIT_NORMAL = 6.20
 COURSE_FALLBACK_START_WAIT_RETRY = 3.80
 # Immediate-start laser-gate routes calibrated against exact UE5 gate geometry, live G1 phase,
-# uphill slope speeds, and Camera Horizontal Assist angular rates: both modes open immediately
-# with a right turn (W+D) to bypass Gate 1's center laser on the right side without waiting,
-# finishing in ~11.0-11.2s with trailing forward buffer to ~12.3-12.55s under the 15s limit.
+# measured uphill run speed (~5.8-6.0 m/s), and Camera Horizontal Assist yaw rate: both modes
+# open immediately with a right turn (W+D) to clear Gate 1 on the right without waiting, cut
+# the inside racing line cleanly through Gates 4-6 (~9.5-9.8s ring entry), and hold trailing
+# forward buffer to 11.50s so slower framerates still cross cleanly under 15s.
 COURSE_STRAIGHT_CAMERA_ASSIST_ON = 0.0
 COURSE_STRAIGHT_CAMERA_ASSIST_OFF = 0.0
 COURSE_TURNS_CAMERA_ASSIST_ON: tuple[tuple[str, float, float], ...] = (
-    ("right", 0.50, 4.65),
-    ("right", 0.40, 0.60),
-    ("right", 2.00, 4.15),
+    ("right", 0.45, 4.35),
+    ("right", 1.60, 1.45),
+    ("right", 0.75, 2.90),
 )
 COURSE_TURNS_CAMERA_ASSIST_OFF: tuple[tuple[str, float, float], ...] = (
-    ("right", 0.65, 4.70),
-    ("right", 1.70, 0.40),
-    ("right", 1.80, 3.30),
+    ("right", 0.50, 3.30),
+    ("right", 0.80, 1.20),
+    ("right", 2.45, 3.25),
 )
 MAX_CONSECUTIVE_FAILURES = 6
 REENTER_NPC_ON_CONSECUTIVE_FAILURE = 3
@@ -616,11 +617,11 @@ class MinigameBlingRun(Runtime):
                         max(poll_deadline, now + COURSE_TIMER_CONFIRM_EXTEND_SECONDS),
                     )
                     # When forward is not yet pressed, confirm the second ticking frame
-                    # quickly (~50ms) so post-tick departure lag stays minimal.
+                    # quickly (~30ms sleep + capture/OCR) so post-tick departure lag stays low.
                     interval = (
                         COURSE_TIMER_POLL_INTERVAL_SECONDS
                         if fwd_down_at is not None
-                        else min(COURSE_TIMER_POLL_INTERVAL_SECONDS, 0.05)
+                        else min(COURSE_TIMER_POLL_INTERVAL_SECONDS, 0.03)
                     )
                     sleep_s = min(interval, max(0.0, _effective_deadline() - now))
                     if sleep_s <= 0:
