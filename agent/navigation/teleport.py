@@ -5,7 +5,7 @@ import re
 from task_control import task_time as time
 import cv2
 from game_view import require_game_frame
-from .models import NavigationError, NavigationMapMismatchError
+from .models import NavigationError, NavigationLockedError, NavigationMapMismatchError
 from .vision import Locator
 from .matching import luma, match_map
 
@@ -39,6 +39,8 @@ class Teleporter:
         self._pre_click_frame = None
         self.map_diagnostics = []
         self.home_region_name = None
+        self.confirmed_regions: list[tuple[str, str]] = []
+        self.confirmed_spires: list[tuple[str, str, str]] = []
 
     def fixed_panel_roi(self):
         """Return the fixed overlapping-marker list region, widened for long checkpoint names."""
@@ -172,7 +174,12 @@ class Teleporter:
                                scroll=True, scroll_roi=scroll_roi):
                 return True
             if expanded and menu_visible():
-                raise NavigationError(f"地图区域「{wanted}」尚未解锁。")
+                raise NavigationLockedError(
+                    f"地图区域「{wanted}」尚未解锁。",
+                    kind="region",
+                    map_id=self.locator.spec.id,
+                    region=wanted,
+                )
             return False
 
         try:
@@ -664,19 +671,27 @@ class Teleporter:
             clicked = bool(find_entry(click=True))
             self.event({"type": "teleport_list_selected", "name": checkpoint["name"], "clicked": clicked})
             return clicked and self.rt.pause(POINT_DETAIL_DELAY)
+        def _raise_locked_spire():
+            raise NavigationLockedError(
+                "传送点尚未解锁。",
+                kind="spire",
+                map_id=self.locator.spec.id,
+                region=str(checkpoint.get("region") or ""),
+                name=str(checkpoint.get("name") or ""),
+            )
         try:
             if not detail_ready() and not find_entry(click=False) and locked_popup_visible():
-                raise NavigationError("传送点尚未解锁。")
+                _raise_locked_spire()
             # Overlapping markers open a candidate list first. Only retry that
             # safe selection while the named entry is still visible; wait for
             # its detail button instead of reading the list's previous frame.
             if not self.rt.ui.enter_page(select_entry, detail_ready,
                     source=find_entry, attempts=2, seconds=4):
                 if locked_popup_visible():
-                    raise NavigationError("传送点尚未解锁。")
+                    _raise_locked_spire()
                 raise NavigationError("选中点位后未找到传送按钮。")
             if text == "追踪":
-                raise NavigationError("传送点尚未解锁。")
+                _raise_locked_spire()
             clicked = self.rt.action("Click", target=button)
             self.event({"type": "teleport_button", "clicked": clicked, "target": button})
             if not clicked:
@@ -703,6 +718,9 @@ class Teleporter:
         if not map_reused and not self.rt.ui.open_map(self.event):
             raise NavigationError("无法打开地图。")
         self.region(checkpoint)
+        region_key = (self.locator.spec.id, str(checkpoint.get("region") or ""))
+        if region_key[1] and region_key not in self.confirmed_regions:
+            self.confirmed_regions.append(region_key)
         if not map_reused:
             self.rt.pause(.5)
         self.zoom()
@@ -760,6 +778,13 @@ class Teleporter:
             raise NavigationError("传送后未恢复主界面。")
         self.locator.reset()
         self.hint = checkpoint["x"], checkpoint["y"]
+        spire_key = (
+            self.locator.spec.id,
+            str(checkpoint.get("region") or ""),
+            str(checkpoint.get("name") or ""),
+        )
+        if spire_key[1] and spire_key[2] and spire_key not in self.confirmed_spires:
+            self.confirmed_spires.append(spire_key)
         self.event({"type": "teleport", "checkpoint": checkpoint})
 
     def prepare(self, route):

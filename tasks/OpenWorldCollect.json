@@ -7,7 +7,7 @@
       "group": ["daily", "periodic"],
       "default_check": false,
       "description": "使用姜饼人范围拾取能力，按顺序逐条跑完所选的大世界采集路线。驻留等待时实时读取左侧材料提示，长时间无新材料弹出后自动前往下一处，并在运行结束后输出各点位实测耗时与范围推断报告。",
-      "option": ["OpenWorldRoutes", "OpenWorldGingerbreadSummon", "OpenWorldQuietWindow", "TaskRouteOverlay"]
+      "option": ["OpenWorldRoutes", "OpenWorldGingerbreadSummon", "OpenWorldQuietWindow", "OpenWorldLockedTeleport", "TaskRouteOverlay"]
     }
   ],
   "option": {
@@ -196,6 +196,36 @@
                 "adaptive_exit": false,
                 "quiet_seconds": 20.0,
                 "initial_wait_seconds": 20.0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "OpenWorldLockedTeleport": {
+      "type": "select",
+      "label": "未解锁传送点处理",
+      "default_case": "Remember",
+      "description": "遇到未解锁的区域或流转之柱时自动跳过；默认按当前账号记住 7 天，避免后续重复打开地图尝试。解锁新传送点后，切换为「本次忽略记忆，全部重新检测」运行一次（或等 7 天后自动复检）即可更新记忆。",
+      "cases": [
+        {
+          "name": "Remember",
+          "label": "自动跳过并记住 7 天（推荐）",
+          "pipeline_override": {
+            "MaaNikki_OpenWorldCollect": {
+              "custom_action_param": {
+                "locked_teleport_memory": "remember"
+              }
+            }
+          }
+        },
+        {
+          "name": "Recheck",
+          "label": "本次忽略记忆，全部重新检测",
+          "pipeline_override": {
+            "MaaNikki_OpenWorldCollect": {
+              "custom_action_param": {
+                "locked_teleport_memory": "recheck"
               }
             }
           }

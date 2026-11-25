@@ -27,6 +27,17 @@ class NavigationMapMismatchError(NavigationError):
         self.expected_title = expected_title
 
 
+class NavigationLockedError(NavigationError):
+    """Target map region or teleport spire is not yet unlocked on this account."""
+
+    def __init__(self, message, *, kind="", map_id="", region="", name=""):
+        super().__init__(message)
+        self.kind = str(kind or "")
+        self.map_id = str(map_id or "")
+        self.region = str(region or "")
+        self.name = str(name or "")
+
+
 MINIMAP_POSITION_SCORE = .55
 # Coordinates use pixel edges, shared by native sampling and reference crops.
 # Paired player-centered maps place the minimap arrow pivot at (181, 124) in 1080p.

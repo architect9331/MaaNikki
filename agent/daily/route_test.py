@@ -19,13 +19,38 @@ import cv2
 from .runtime import Runtime, RESOURCE
 from .settings import ROOT, foreground_inputs as inputs_allowed
 from .startup import focus_game
+from account_state import AccountState, LOCKED_TELEPORT_TTL_DAYS
 from navigation.controller import BackgroundInput, ForegroundInput
 from navigation.session import create_navigator
-from navigation.models import NavigationError, NavigationMapMismatchError, maps, parse_route
+from navigation.models import NavigationError, NavigationLockedError, NavigationMapMismatchError, maps, parse_route
 from navigation.telemetry import record_route_telemetry
 from navigation.teleport import Teleporter
 from navigation.vision import Locator
 from adventure_report import try_record_adventure_entry
+
+
+def _route_teleport_targets(model) -> list[tuple[str, str, str]]:
+    """Collect deduplicated (map_id, region, spire_name) checkpoints required by a route."""
+    targets: list[tuple[str, str, str]] = []
+    seen: set[tuple[str, str, str]] = set()
+    checkpoints = []
+    start_tp = model.document.get("teleport") if isinstance(model.document, dict) else None
+    if isinstance(start_tp, dict):
+        checkpoints.append(start_tp)
+    for point in getattr(model, "points", ()) or ():
+        if getattr(point, "action", "") == "teleport":
+            cp = (point.params or {}).get("checkpoint")
+            if isinstance(cp, dict):
+                checkpoints.append(cp)
+    for cp in checkpoints:
+        region = str(cp.get("region") or "").strip()
+        name = str(cp.get("name") or "").strip()
+        if region or name:
+            key = (model.map_id, region, name)
+            if key not in seen:
+                seen.add(key)
+                targets.append(key)
+    return targets
 
 
 NAVIGATION_ACTIONS = {"", "teleport", "wait"}
@@ -427,6 +452,58 @@ class RouteTest(Runtime):
     def prepare_route(self, settings, actions, inputs):
         """Task-specific setup after arriving at the route start, before walking."""
 
+    def _resolve_locked_teleport_account(self, *, allow_focus=False):
+        """Resolve UID-scoped account state from live pixels; never guess from saved index."""
+        if self.dev_only:
+            return None, False
+        from task_control import active_session
+        session = active_session()
+        known_uid = self._account_uid or (getattr(session, "account_uid", None) if session else None)
+        did_focus = False
+        if not known_uid:
+            if not allow_focus or self.stopped:
+                return None, False
+            bg = self.background_mode()
+            if not bg:
+                if not inputs_allowed():
+                    return None, False
+                temp_inputs = TestInputs(
+                    self.controller, lambda: self.stopped,
+                    lambda: self.hit("MaaNikki_MainDetected"), bindings=self.game_keys,
+                )
+                try:
+                    focus_game(self, temp_inputs)
+                    did_focus = True
+                except NavigationError:
+                    return None, False
+        try:
+            return AccountState.for_runtime(ROOT, self), did_focus
+        except (OSError, ValueError, RuntimeError) as error:
+            self.log(f"未获取到当前账号 UID，未解锁传送点跳过仅在本次运行内生效：{error}", detail=True)
+            return None, did_focus
+
+    def _sync_locked_teleport_memory(self, account, *, confirmed_regions=(), confirmed_spires=(),
+                                     locked_target=None):
+        """Best-effort update of UID-scoped locked region/spire memory."""
+        if account is None or self.dev_only:
+            return
+        if confirmed_regions or confirmed_spires:
+            try:
+                if account.clear_locked_teleport(regions=confirmed_regions, spires=confirmed_spires):
+                    self.log("检测到曾跳过未解锁的区域或流转之柱现已解锁，已清除跳过记忆。")
+            except (OSError, ValueError, RuntimeError) as error:
+                self.log(f"清除未解锁传送点记忆失败：{error}", detail=True)
+        if isinstance(locked_target, dict) and locked_target.get("kind") in {"region", "spire"}:
+            try:
+                account.record_locked_teleport(
+                    kind=locked_target["kind"],
+                    map_id=locked_target.get("map") or "",
+                    region=locked_target.get("region") or "",
+                    name=locked_target.get("name") or "",
+                )
+            except (OSError, ValueError, RuntimeError) as error:
+                self.log(f"保存未解锁传送点记忆失败：{error}", detail=True)
+
     def run_test(self, settings):
         try:
             if self.dev_only and os.environ.get("PI_MAANIKKI_DEV_MODE") != "1":
@@ -494,15 +571,44 @@ class RouteTest(Runtime):
         try:
             consecutive_empty_routes = 0
             session_total_picked = 0
-            locked_regions: set[str] = set()
-            needs_refocus = True
+            locked_memory_mode = str(settings.get("locked_teleport_memory") or "remember")
+            locked_regions: set[tuple[str, str]] = set()
+            locked_spires: set[tuple[str, str, str]] = set()
+            remembered_regions: set[tuple[str, str]] = set()
+            remembered_spires: set[tuple[str, str, str]] = set()
+            account, did_focus = self._resolve_locked_teleport_account(allow_focus=True)
+            needs_refocus = not did_focus
+            if account is not None and locked_memory_mode != "recheck":
+                try:
+                    remembered_regions, remembered_spires = account.locked_teleports()
+                except (OSError, ValueError, RuntimeError) as error:
+                    self.log(f"读取未解锁传送点记忆失败：{error}", detail=True)
+                if remembered_regions or remembered_spires:
+                    parts = []
+                    if remembered_regions:
+                        parts.append(f"{len(remembered_regions)} 个区域")
+                    if remembered_spires:
+                        parts.append(f"{len(remembered_spires)} 个流转之柱")
+                    self.log(f"已载入本账号未解锁跳过记忆：{'、'.join(parts)}（{LOCKED_TELEPORT_TTL_DAYS} 天内免重复尝试）。")
             for index, (model, spec, title) in enumerate(prepared, 1):
                 if self.stopped:
                     summary["stopped"] = True
                     break
-                tp = model.document.get("teleport") if isinstance(model.document.get("teleport"), dict) else {}
-                target_region = tp.get("region") if isinstance(tp.get("region"), str) else ""
-                if target_region and target_region in locked_regions:
+                skip_reason = None
+                skip_stage = "region"
+                skip_from_memory = False
+                for t_map, t_region, t_name in _route_teleport_targets(model):
+                    if t_region and (t_map, t_region) in (locked_regions | remembered_regions):
+                        skip_from_memory = (t_map, t_region) not in locked_regions
+                        skip_stage = "region"
+                        skip_reason = f"地图区域「{t_region}」尚未解锁。"
+                        break
+                    if t_region and t_name and (t_map, t_region, t_name) in (locked_spires | remembered_spires):
+                        skip_from_memory = (t_map, t_region, t_name) not in locked_spires
+                        skip_stage = "selection"
+                        skip_reason = f"传送点「{t_name}」尚未解锁。"
+                        break
+                if skip_reason is not None:
                     summary["routes"].append({
                         "index": index,
                         "route": model.id,
@@ -511,12 +617,14 @@ class RouteTest(Runtime):
                         "active_seconds": 0.0,
                         "success": False,
                         "skipped_locked": True,
-                        "stage": "region",
-                        "error_type": "NavigationError",
-                        "error": f"地图区域「{target_region}」尚未解锁。",
+                        "skipped_from_memory": skip_from_memory,
+                        "stage": skip_stage,
+                        "error_type": "NavigationLockedError",
+                        "error": skip_reason,
                     })
                     write_json(directory / "result.json", summary)
-                    self.log(f"{collection_title} {index}/{len(prepared)}：{title}，地图区域「{target_region}」尚未解锁，直接跳过。")
+                    mem_tag = "（按账号记忆直接跳过）" if skip_from_memory else "直接跳过。"
+                    self.log(f"{collection_title} {index}/{len(prepared)}：{title}，{skip_reason}{mem_tag}")
                     continue
                 self.log(f"{collection_title} {index}/{len(prepared)}：{title}。")
                 runner = type(self)(self.context)
@@ -536,12 +644,53 @@ class RouteTest(Runtime):
                                        force_teleport=bool(model.document.get("teleport")))
                 needs_refocus = False
                 details = runner.last_result or {"success": False, "error": "执行结果未保存"}
+                if account is None and not self.dev_only:
+                    account, _ = self._resolve_locked_teleport_account(allow_focus=False)
+                confirmed_regions = [tuple(item) for item in details.get("confirmed_regions", []) if len(item) == 2]
+                confirmed_spires = [tuple(item) for item in details.get("confirmed_spires", []) if len(item) == 3]
+                for reg_key in confirmed_regions:
+                    locked_regions.discard(reg_key)
+                    remembered_regions.discard(reg_key)
+                for sp_key in confirmed_spires:
+                    locked_spires.discard(sp_key)
+                    remembered_spires.discard(sp_key)
+                    locked_regions.discard((sp_key[0], sp_key[1]))
+                    remembered_regions.discard((sp_key[0], sp_key[1]))
                 err_text = str(details.get("error") or "")
+                locked_target = details.get("locked_target") if isinstance(details.get("locked_target"), dict) else None
                 locked_match = re.search(r"地图区域「(.+?)」尚未解锁", err_text)
-                if not ok and (locked_match or err_text == "传送点尚未解锁。"):
+                if not ok and (details.get("skipped_locked") or locked_match or err_text == "传送点尚未解锁。"):
                     details["skipped_locked"] = True
-                    if locked_match:
-                        locked_regions.add(locked_match.group(1))
+                    if locked_target is None:
+                        start_tp = model.document.get("teleport") if isinstance(model.document.get("teleport"), dict) else {}
+                        if locked_match:
+                            locked_target = {
+                                "kind": "region",
+                                "map": model.map_id,
+                                "region": locked_match.group(1),
+                                "name": "",
+                            }
+                        elif start_tp.get("region") and start_tp.get("name"):
+                            locked_target = {
+                                "kind": "spire",
+                                "map": model.map_id,
+                                "region": str(start_tp["region"]),
+                                "name": str(start_tp["name"]),
+                            }
+                    if isinstance(locked_target, dict):
+                        l_map = str(locked_target.get("map") or model.map_id)
+                        l_region = str(locked_target.get("region") or "")
+                        l_name = str(locked_target.get("name") or "")
+                        if locked_target.get("kind") == "region" and l_region:
+                            locked_regions.add((l_map, l_region))
+                        elif locked_target.get("kind") == "spire" and l_region and l_name:
+                            locked_spires.add((l_map, l_region, l_name))
+                self._sync_locked_teleport_memory(
+                    account,
+                    confirmed_regions=confirmed_regions,
+                    confirmed_spires=confirmed_spires,
+                    locked_target=locked_target if details.get("skipped_locked") else None,
+                )
                 gb_info = details.get("gingerbread") if isinstance(details.get("gingerbread"), dict) else None
                 if gb_info is not None:
                     picked_now = int(gb_info.get("total_picked") or 0)
@@ -613,13 +762,13 @@ class RouteTest(Runtime):
             summary["completed"] = len(summary["routes"])
             summary["passed"] = sum(bool(item["success"]) for item in summary["routes"])
             summary["skipped_locked"] = sum(bool(item.get("skipped_locked")) for item in summary["routes"])
+            summary["skipped_from_memory"] = sum(bool(item.get("skipped_from_memory")) for item in summary["routes"])
             summary["success"] = (
                 summary["completed"] == summary["planned"]
                 and (
                     summary["passed"] == summary["planned"]
                     or (
                         not self.dev_only
-                        and summary["passed"] > 0
                         and summary["passed"] + summary["skipped_locked"] == summary["planned"]
                     )
                 )
@@ -658,16 +807,26 @@ class RouteTest(Runtime):
                     f"（原设偏短 {short_wps} 处，保守富余 {long_wps} 处）。明细：{top_items_str}"
                 )
             write_json(directory / "result.json", summary)
-            skip_note = (
-                f"（另有 {summary['skipped_locked']} 条因区域或传送点尚未解锁跳过）"
-                if summary["skipped_locked"] else ""
-            )
-            finish_ui = f"{collection_title}结束：完成 {summary['passed']}/{summary['planned']} 条{skip_note}。"
+            if summary["passed"] == 0 and summary["skipped_locked"] == summary["planned"] > 0 and not self.dev_only:
+                finish_ui = (
+                    f"{collection_title}结束：所选 {summary['planned']} 条路线对应的区域或传送点均尚未解锁，"
+                    f"已全部跳过（{LOCKED_TELEPORT_TTL_DAYS} 天内免重复尝试）。"
+                )
+            else:
+                mem_detail = (
+                    f"，其中 {summary['skipped_from_memory']} 条按记忆直接跳过"
+                    if summary["skipped_from_memory"] else ""
+                )
+                skip_note = (
+                    f"（另有 {summary['skipped_locked']} 条因区域或传送点尚未解锁跳过{mem_detail}）"
+                    if summary["skipped_locked"] else ""
+                )
+                finish_ui = f"{collection_title}结束：完成 {summary['passed']}/{summary['planned']} 条{skip_note}。"
             self.log(finish_ui + "日志：" + str(directory), ui_text=finish_ui)
         return summary["success"]
 
     def run_single(self, settings, *, prepared, directory=None, refocus=True, force_teleport=False):
-        inputs = model = navigator = actions = None
+        inputs = model = navigator = actions = teleporter = None
         previous_inputs = self.navigation_inputs
         self.telemetry_events = []
         self.current_local_index = 0
@@ -793,6 +952,14 @@ class RouteTest(Runtime):
             result.update(success=False, stage=self.stage, error_type=type(error).__name__,
                           error=str(error), stopped=self.stopped,
                           fatal=isinstance(error, (TypeError, KeyError, AttributeError)))
+            if isinstance(error, NavigationLockedError):
+                result["skipped_locked"] = True
+                result["locked_target"] = {
+                    "kind": error.kind,
+                    "map": error.map_id,
+                    "region": error.region,
+                    "name": error.name,
+                }
             if inputs:
                 result.update(inputs.focus_details())
             self.log(f"{self.label}停止：{error}")
@@ -803,6 +970,11 @@ class RouteTest(Runtime):
                 except (OSError, ValueError, cv2.error):
                     pass
         finally:
+            if teleporter is not None:
+                if teleporter.confirmed_regions:
+                    result["confirmed_regions"] = [list(item) for item in teleporter.confirmed_regions]
+                if teleporter.confirmed_spires:
+                    result["confirmed_spires"] = [list(item) for item in teleporter.confirmed_spires]
             active_route = getattr(navigator, "active_route", None) or model
             if actions is not None and hasattr(actions, "gingerbread_summary"):
                 gb_summary = actions.gingerbread_summary()
@@ -836,7 +1008,7 @@ class RouteTest(Runtime):
                         detail=f"完成 {actions.count} 次采集/交互",
                         runs=1,
                     )
-            if active_route is not None and not self.stopped:
+            if active_route is not None and not self.stopped and not result.get("skipped_locked"):
                 telemetry = record_route_telemetry(
                     ROOT, active_route, self.telemetry_events,
                     executor=actions.executor if actions else mode,
@@ -877,6 +1049,22 @@ class RouteTest(Runtime):
                     self.log(f"{self.label}无法确认按键已全部释放，请检查游戏状态。")
                     self.navigation_halted = True
             self.navigation_inputs = previous_inputs
+            if not self.dev_only and self.collection_entry is None and not self.stopped:
+                confirmed_regions = [tuple(item) for item in result.get("confirmed_regions", []) if len(item) == 2]
+                confirmed_spires = [tuple(item) for item in result.get("confirmed_spires", []) if len(item) == 3]
+                locked_target = result.get("locked_target") if result.get("skipped_locked") else None
+                if confirmed_regions or confirmed_spires or locked_target:
+                    standalone_account = None
+                    try:
+                        standalone_account = AccountState.for_runtime(ROOT, self)
+                    except (OSError, ValueError, RuntimeError):
+                        standalone_account = None
+                    self._sync_locked_teleport_memory(
+                        standalone_account,
+                        confirmed_regions=confirmed_regions,
+                        confirmed_spires=confirmed_spires,
+                        locked_target=locked_target,
+                    )
             self.last_result = result
             if self.directory:
                 try:
