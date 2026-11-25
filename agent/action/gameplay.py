@@ -78,3 +78,20 @@ class GameplayAction(CustomAction):
             if not runtime.stopped:
                 runtime.main()
             return False
+
+
+@agent_action("nikki.weekly_home_shop")
+class WeeklyHomeShopAction(CustomAction):
+    def run(self, context, argv):
+        runtime = Executors(context)
+        try:
+            options = parse_custom_param(argv.custom_action_param)
+            from daily.home_shop import WeeklyHomeShop
+            return WeeklyHomeShop(runtime, options).run()
+        except TaskStopped:
+            raise
+        except (OSError, ValueError, KeyError, TypeError, RuntimeError, cv2.error) as error:
+            runtime.log(f"任务未完成：{error}。")
+            if not runtime.stopped:
+                runtime.main()
+            return False

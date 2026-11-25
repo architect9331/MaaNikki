@@ -2,10 +2,8 @@
   "MaaNikki_WeeklyHomeShop": {
     "recognition": "DirectHit",
     "action": "Custom",
-    "custom_action": "nikki.gameplay",
-    "custom_action_param": {
-      "kind": "weekly_home_shop"
-    },
+    "custom_action": "nikki.weekly_home_shop",
+    "custom_action_param": {},
     "post_delay": 0,
     "next": []
   },
