@@ -44,15 +44,6 @@ SHARD_NAME_ROI = [1040, 72, 230, 52]
 HUD_CURRENCY_ROI = [995, 14, 275, 44]
 HUD_HOME_MANAGE_ROI = [760, 0, 520, 90]
 
-# Florawish checkpoint used when leaving Home (where the Infinite Heart hotkey opens 家园经营 instead).
-WORLD_EXIT_TELEPORT = {
-    "name": "心愿花街",
-    "province": "心愿原野",
-    "region": "花愿镇",
-    "x": 10260.861,
-    "y": 10085.844,
-}
-
 # Top-center shard tab click centers at 1280x720 (verified against live screenshots):
 # Left: 星海碎片 (ver 3), Middle: 心愿原野碎片 (ver 1), Right: 伊赞之土碎片 (ver 2)
 SHARD_TABS = (
@@ -893,7 +884,8 @@ class InfiniteHeartScanner:
             return True
         return "家园经营" in (self.rt.text(HEADER_TITLE_ROI, image=image) or "")
 
-    def _leave_home_to_miraland(self, *, check_map_first: bool = False) -> bool:
+    def _leave_home_to_starsea(self, *, check_map_first: bool = False) -> bool:
+        from daily.starsea import HUB
         from navigation.models import NavigationError, maps
         from navigation.teleport import Teleporter
         from navigation.vision import Locator
@@ -902,7 +894,7 @@ class InfiniteHeartScanner:
             with self.rt.input_guard() as inputs:
                 teleporter = Teleporter(
                     self.rt,
-                    Locator(maps(self.rt.ui.resource)["miraland"]),
+                    Locator(maps(self.rt.ui.resource)["starsea"]),
                     inputs=inputs,
                 )
                 reuse_map = False
@@ -911,10 +903,10 @@ class InfiniteHeartScanner:
                         self.rt.ui.main()
                         return False
                     reuse_map = True
-                self.rt.log("无限之心读取：检测到当前位于家园，正在先传送到花愿镇再打开无限之心。")
-                teleporter.transport(WORLD_EXIT_TELEPORT, reuse_map=reuse_map)
+                self.rt.log("无限之心读取：检测到当前位于家园，正在先传送到星海无界枢纽再打开无限之心。")
+                teleporter.transport(HUB, reuse_map=reuse_map)
         except (NavigationError, ValueError, KeyError, OSError, RuntimeError, TypeError, cv2.error) as error:
-            self.rt.log(f"无限之心读取：从家园传送到花愿镇失败（{error}）。")
+            self.rt.log(f"无限之心读取：从家园传送到星海无界枢纽失败（{error}）。")
             return False
         return bool(self.rt.ui.main())
 
@@ -928,7 +920,7 @@ class InfiniteHeartScanner:
         left_home = False
         frame = self.rt.capture()
         if self._is_in_home_hud(frame):
-            if not self._leave_home_to_miraland():
+            if not self._leave_home_to_starsea():
                 return False
             left_home = True
 
@@ -953,7 +945,7 @@ class InfiniteHeartScanner:
                 if frame is not None and self._is_on_home_manage_page(frame):
                     if left_home:
                         return False
-                    if not self.rt.ui.main() or not self._leave_home_to_miraland():
+                    if not self.rt.ui.main() or not self._leave_home_to_starsea():
                         return False
                     left_home = True
                     continue
@@ -963,7 +955,7 @@ class InfiniteHeartScanner:
                 if frame is not None and self._is_on_heart_page(frame):
                     return True
                 if frame is not None and self._is_on_home_manage_page(frame) and not left_home:
-                    if not self.rt.ui.main() or not self._leave_home_to_miraland():
+                    if not self.rt.ui.main() or not self._leave_home_to_starsea():
                         return False
                     left_home = True
                     continue
@@ -971,12 +963,12 @@ class InfiniteHeartScanner:
             if not left_home and not self.rt.stopped:
                 frame = self.rt.capture()
                 if self._is_on_home_manage_page(frame) or self._is_in_home_hud(frame):
-                    if not self.rt.ui.main() or not self._leave_home_to_miraland():
+                    if not self.rt.ui.main() or not self._leave_home_to_starsea():
                         return False
                     left_home = True
                     continue
                 # Fallback when HUD was hidden or hotkey opened another Home-only UI: verify via map.
-                if self.rt.ui.main() and self._leave_home_to_miraland(check_map_first=True):
+                if self.rt.ui.main() and self._leave_home_to_starsea(check_map_first=True):
                     left_home = True
                     continue
             break
