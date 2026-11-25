@@ -42,6 +42,16 @@ ZOOM_SCALE_DETAIL = 4.667
 HEADER_TITLE_ROI = [60, 14, 170, 44]
 SHARD_NAME_ROI = [1040, 72, 230, 52]
 HUD_CURRENCY_ROI = [995, 14, 275, 44]
+HUD_HOME_MANAGE_ROI = [760, 0, 520, 90]
+
+# Florawish checkpoint used when leaving Home (where the Infinite Heart hotkey opens 家园经营 instead).
+WORLD_EXIT_TELEPORT = {
+    "name": "心愿花街",
+    "province": "心愿原野",
+    "region": "花愿镇",
+    "x": 10260.861,
+    "y": 10085.844,
+}
 
 # Top-center shard tab click centers at 1280x720 (verified against live screenshots):
 # Left: 星海碎片 (ver 3), Middle: 心愿原野碎片 (ver 1), Right: 伊赞之土碎片 (ver 2)
@@ -871,20 +881,106 @@ class InfiniteHeartScanner:
 
         return fuse_shard_observations(vid, global_decoded, zoomed_obs, styling_levels)
 
+    def _is_in_home_hud(self, image) -> bool:
+        if image is None:
+            return False
+        return bool(self.rt.text(HUD_HOME_MANAGE_ROI, r"家园经营", image=image))
+
+    def _is_on_home_manage_page(self, image) -> bool:
+        if image is None:
+            return False
+        if self.rt.hit("MaaNikki_HomeShop_ManageReady", image=image):
+            return True
+        return "家园经营" in (self.rt.text(HEADER_TITLE_ROI, image=image) or "")
+
+    def _leave_home_to_miraland(self, *, check_map_first: bool = False) -> bool:
+        from navigation.models import NavigationError, maps
+        from navigation.teleport import Teleporter
+        from navigation.vision import Locator
+
+        try:
+            with self.rt.input_guard() as inputs:
+                teleporter = Teleporter(
+                    self.rt,
+                    Locator(maps(self.rt.ui.resource)["miraland"]),
+                    inputs=inputs,
+                )
+                reuse_map = False
+                if check_map_first:
+                    if not teleporter.player_in_home():
+                        self.rt.ui.main()
+                        return False
+                    reuse_map = True
+                self.rt.log("无限之心读取：检测到当前位于家园，正在先传送到花愿镇再打开无限之心。")
+                teleporter.transport(WORLD_EXIT_TELEPORT, reuse_map=reuse_map)
+        except (NavigationError, ValueError, KeyError, OSError, RuntimeError, TypeError, cv2.error) as error:
+            self.rt.log(f"无限之心读取：从家园传送到花愿镇失败（{error}）。")
+            return False
+        return bool(self.rt.ui.main())
+
     def _enter_infinite_heart(self) -> bool:
         frame = self.rt.capture()
         if frame is not None and self._is_on_heart_page(frame):
             return True
-        if self.rt.ui.main() and self.rt.ui.enter_page(
-            lambda: self.rt.key("infinite_heart", 0),
-            "MaaNikki_InfiniteHeartReady",
-            source="MaaNikki_MainDetected",
-            recover=self.rt.ui.main,
-        ):
-            # Let the opener zoom/HUD fade animation settle before reading tabs and currencies.
-            self.rt.pause(1.0)
-            frame = self.rt.capture()
-            return frame is not None and self._is_on_heart_page(frame)
+        if not self.rt.ui.main():
+            return False
+
+        left_home = False
+        frame = self.rt.capture()
+        if self._is_in_home_hud(frame):
+            if not self._leave_home_to_miraland():
+                return False
+            left_home = True
+
+        def heart_or_home_manage():
+            with self.rt.observe():
+                return bool(
+                    self.rt.hit("MaaNikki_InfiniteHeartReady")
+                    or self.rt.hit("MaaNikki_HomeShop_ManageReady")
+                )
+
+        for _ in range(2):
+            if self.rt.stopped:
+                return False
+            if self.rt.ui.enter_page(
+                lambda: self.rt.key("infinite_heart", 0),
+                heart_or_home_manage,
+                source="MaaNikki_MainDetected",
+                recover=self.rt.ui.main,
+            ):
+                self.rt.pause(0.4)
+                frame = self.rt.capture()
+                if frame is not None and self._is_on_home_manage_page(frame):
+                    if left_home:
+                        return False
+                    if not self.rt.ui.main() or not self._leave_home_to_miraland():
+                        return False
+                    left_home = True
+                    continue
+                # Let the opener zoom/HUD fade animation settle before reading tabs and currencies.
+                self.rt.pause(0.6)
+                frame = self.rt.capture()
+                if frame is not None and self._is_on_heart_page(frame):
+                    return True
+                if frame is not None and self._is_on_home_manage_page(frame) and not left_home:
+                    if not self.rt.ui.main() or not self._leave_home_to_miraland():
+                        return False
+                    left_home = True
+                    continue
+                return False
+            if not left_home and not self.rt.stopped:
+                frame = self.rt.capture()
+                if self._is_on_home_manage_page(frame) or self._is_in_home_hud(frame):
+                    if not self.rt.ui.main() or not self._leave_home_to_miraland():
+                        return False
+                    left_home = True
+                    continue
+                # Fallback when HUD was hidden or hotkey opened another Home-only UI: verify via map.
+                if self.rt.ui.main() and self._leave_home_to_miraland(check_map_first=True):
+                    left_home = True
+                    continue
+            break
+
         key_label = self.rt.game_keys.label("infinite_heart")
         self.rt.log(
             f"未能通过快捷键「{key_label}」进入无限之心，请确认游戏停留在可移动的主界面，且「游戏键位 → 系统功能」中的无限之心按键与游戏内一致。"
