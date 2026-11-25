@@ -5,7 +5,9 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 import json
 import os
-import time
+
+from account_state import game_day
+from task_control import task_time as time
 
 from .planner import Card
 
@@ -48,6 +50,7 @@ class PendingReview:
     scans: list
     created: float
     uid: str
+    created_day: str = field(default_factory=lambda: game_day().isoformat())
     realm_task_id: int | None = None
     upgrade_card: Card | None = None
     realm_kind: str | None = None
@@ -128,7 +131,9 @@ def begin_realm(runtime, task_id, *, kind=None, collection=False):
         if pending.uid != runtime.account_uid():
             clear(runtime)
             raise ValueError("朝夕待复核记录属于另一 UID，请重新运行本轮任务")
-        if pending.source_task_id >= task_id or time.monotonic()-pending.created >= 3600:
+        if (pending.source_task_id >= task_id
+                or pending.created_day != game_day().isoformat()
+                or time.monotonic() - pending.created >= 3600):
             clear(runtime)
             raise ValueError("朝夕待复核记录已过期或任务顺序不一致，请重新运行本轮任务")
         pending.realm_task_id = task_id
@@ -148,6 +153,6 @@ def take(runtime, task_id):
     pending = _pending.pop(key(runtime), None)
     if pending and pending.uid != runtime.account_uid():
         raise ValueError("待复核记录属于另一 UID，本次未继续领奖")
-    if pending and (pending.realm_task_id != task_id or time.monotonic()-pending.created >= 3600):
-        raise ValueError("待复核记录与本次幻境不匹配或已过期，未继续领奖")
+    if pending and (pending.realm_task_id != task_id or pending.created_day != game_day().isoformat()):
+        raise ValueError("待复核记录与本次幻境不匹配或已跨日，未继续领奖")
     return pending
