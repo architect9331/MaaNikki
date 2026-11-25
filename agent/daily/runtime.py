@@ -329,6 +329,7 @@ class Runtime:
                     hwnd=hwnd,
                     notify=self.log,
                     write_log=False,
+                    fit_work_area=True,
                 )
                 self.invalidate_frame()
                 hwnd, cap_size = self._pointer_guard_context(inputs)

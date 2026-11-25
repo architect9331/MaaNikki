@@ -559,8 +559,20 @@ def _snapshot_from_dict(data: dict) -> WindowSnapshot | None:
         return None
 
 
+def _work_area_safe_rect(mi: MONITORINFO, *, pad: int = 4) -> tuple[int, int, int, int]:
+    """Return rcWork inset by pad on edges carrying a taskbar/dock band."""
+    pad = max(0, int(pad))
+    mon = mi.rcMonitor
+    work = mi.rcWork
+    left = int(work.left) + pad if work.left > mon.left else int(work.left)
+    top = int(work.top) + pad if work.top > mon.top else int(work.top)
+    right = int(work.right) - pad if work.right < mon.right else int(work.right)
+    bottom = int(work.bottom) - pad if work.bottom < mon.bottom else int(work.bottom)
+    return left, top, right, bottom
+
+
 def _geometry_candidates(
-    u32, hwnd: int, snap: WindowSnapshot
+    u32, hwnd: int, snap: WindowSnapshot, *, fit_work_area: bool = False
 ) -> list[tuple[tuple[int, int], tuple[int, int]]]:
     """Return prioritized borderless 16:9 (size, pos) candidates for hwnd."""
     if snap.client_size is None:
@@ -578,8 +590,14 @@ def _geometry_candidates(
     work_left, work_top = int(mi.rcWork.left), int(mi.rcWork.top)
     work_right, work_bottom = int(mi.rcWork.right), int(mi.rcWork.bottom)
     work_w, work_h = work_right - work_left, work_bottom - work_top
+    safe_left, safe_top, safe_right, safe_bottom = _work_area_safe_rect(mi, pad=4)
+    safe_w, safe_h = safe_right - safe_left, safe_bottom - safe_top
 
     max_k = min(mon_w // 16, mon_h // 9)
+    if fit_work_area and safe_w > 0 and safe_h > 0:
+        safe_max_k = min(safe_w // 16, safe_h // 9)
+        if safe_max_k >= 40:
+            max_k = min(max_k, safe_max_k)
     if max_k < 40:
         return []
     min_k = min(80, max_k)
@@ -600,7 +618,10 @@ def _geometry_candidates(
         tw, th = 16 * k_val, 9 * k_val
         wx = cx - tw // 2
         wy = cy - th // 2
-        if tw <= work_w and th <= work_h:
+        if fit_work_area and tw <= safe_w and th <= safe_h:
+            wx = max(safe_left, min(wx, safe_right - tw))
+            wy = max(safe_top, min(wy, safe_bottom - th))
+        elif tw <= work_w and th <= work_h:
             wx = max(work_left, min(wx, work_right - tw))
             wy = max(work_top, min(wy, work_bottom - th))
         else:
@@ -1174,7 +1195,12 @@ def restore_session_16_9_windows():
 
 
 def _is_already_borderless_in_monitor(
-    u32, hwnd: int, snap: WindowSnapshot, target_size: tuple[int, int]
+    u32,
+    hwnd: int,
+    snap: WindowSnapshot,
+    target_size: tuple[int, int],
+    *,
+    require_work_area: bool = False,
 ) -> bool:
     if (snap.style & WS_BORDERLESS_MASK) != 0 or (snap.ex_style & WS_EX_BORDERLESS_MASK) != 0:
         return False
@@ -1187,6 +1213,15 @@ def _is_already_borderless_in_monitor(
         cbox = _client_screen_rect(u32, hwnd)
         if mi is None or cbox is None:
             return False
+        if require_work_area:
+            safe_left, safe_top, safe_right, safe_bottom = _work_area_safe_rect(mi, pad=4)
+            if (
+                cbox[0] < safe_left
+                or cbox[1] < safe_top
+                or cbox[2] > safe_right
+                or cbox[3] > safe_bottom
+            ):
+                return False
         extends_past_work = (
             cbox[0] < int(mi.rcWork.left)
             or cbox[1] < int(mi.rcWork.top)
@@ -1231,6 +1266,7 @@ def ensure_16_9_window(
     hwnd: int | None = None,
     notify=None,
     write_log: bool = True,
+    fit_work_area: bool = False,
 ):
     """Ensure the game window renders an unclipped 16:9 frame, adjusting resolution when enabled."""
     if (TALL_CAPTURE_WIDTH, TALL_CAPTURE_HEIGHT) in ALLOWED_FRAME_SIZES:
@@ -1264,7 +1300,9 @@ def ensure_16_9_window(
         if current_snap is None or current_snap.client_size is None:
             return None
 
-        candidates = _geometry_candidates(u32, target_hwnd, current_snap)
+        candidates = _geometry_candidates(
+            u32, target_hwnd, current_snap, fit_work_area=fit_work_area
+        )
         if not candidates:
             return None
 
@@ -1315,7 +1353,9 @@ def ensure_16_9_window(
         break
 
     usable = [c for c in candidates if c[0] not in failed_sizes] or [candidates[-1]]
-    if _is_already_borderless_in_monitor(u32, target_hwnd, current_snap, usable[0][0]):
+    if _is_already_borderless_in_monitor(
+        u32, target_hwnd, current_snap, usable[0][0], require_work_area=fit_work_area
+    ):
         return _poll_valid_16_9_frame(controller, stopped_fn=stopped_fn, timeout=0.9)
 
     with _SESSION_LOCK:
