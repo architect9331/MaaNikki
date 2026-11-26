@@ -148,14 +148,14 @@ class WeeklyHomeShop:
         return False
 
     def _teleport_to_home(self) -> bool:
-        from navigation.locator import MapLocator
-        from navigation.models import NavigationError
+        from navigation.models import NavigationError, maps
         from navigation.teleport import Teleporter
+        from navigation.vision import Locator
 
         self.rt.log(f"{self.LABEL}：当前不在家园，正在传送前往家园…", live=True)
         try:
             with self.rt.input_guard() as inputs:
-                locator = MapLocator(self.rt, ROOT / "resource", "home")
+                locator = Locator(maps(self.rt.ui.resource)["home"])
                 teleporter = Teleporter(self.rt, locator, lambda _ev: None, inputs)
                 teleporter.transport(HOME_TELEPORT)
         except NavigationError as error:
