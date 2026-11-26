@@ -564,7 +564,7 @@ class Gameplay:
     def _realm_header_groups(self, frame):
         result = self.rt.recognize(
             "MaaNikki_Daily_OCR",
-            {"roi": self.REALM_HEADER_ROI, "expected": r"产出[：:]|心愿原野|[伊尹]赞之土"},
+            {"roi": self.REALM_HEADER_ROI, "expected": r"产出[：:]|心愿原野|[伊尹]赞之土|西西亚"},
             image=frame,
         )
         items = list(getattr(result, "filtered_results", None) or []) if result and result.hit else []

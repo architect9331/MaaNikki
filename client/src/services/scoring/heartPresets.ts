@@ -95,4 +95,9 @@ export const MATERIAL_REALM_TARGETS: Record<string, RealmMaterialTarget> = {
   '432042829': { realmType: 'Monster', optionKey: 'MonsterTarget', caseName: 'Weightless', label: '魔物试炼 · 失重（甜美 2.0）' },
   '530602518': { realmType: 'Monster', optionKey: 'MonsterTarget', caseName: 'Lost', label: '魔物试炼 · 迷踪（典雅 2.0）' },
   '2530246569': { realmType: 'Monster', optionKey: 'MonsterTarget', caseName: 'Expel', label: '魔物试炼 · 驱逐（性感 2.0）' },
+  '547982283': { realmType: 'Monster', optionKey: 'MonsterTarget', caseName: 'Chord', label: '魔物试炼 · 和弦（典雅 3.0）' },
+  '3201113704': { realmType: 'Monster', optionKey: 'MonsterTarget', caseName: 'Allegro', label: '魔物试炼 · 急歌（甜美 3.0）' },
+  '3385470718': { realmType: 'Monster', optionKey: 'MonsterTarget', caseName: 'Hollow', label: '魔物试炼 · 空鸣（帅气 3.0）' },
+  '1471069021': { realmType: 'Monster', optionKey: 'MonsterTarget', caseName: 'Accent', label: '魔物试炼 · 重音（清新 3.0）' },
+  '3114326641': { realmType: 'Monster', optionKey: 'MonsterTarget', caseName: 'Finale', label: '魔物试炼 · 终曲（性感 3.0）' },
 };

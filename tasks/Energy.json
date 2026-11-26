@@ -472,6 +472,15 @@
                             "expected": "丰登庆典"
                         }
                     }
+                },
+                {
+                    "name": "Cuckoo",
+                    "label": "报时鸟座钟",
+                    "pipeline_override": {
+                        "MaaNikki_Bless_Level": {
+                            "expected": "报时鸟座钟"
+                        }
+                    }
                 }
             ],
             "default_case": "Well"
@@ -658,6 +667,96 @@
                     "pipeline_override": {
                         "MaaNikki_Monster_Level": {
                             "expected": "驱逐"
+                        }
+                    }
+                },
+                {
+                    "name": "Accumulate",
+                    "label": "蓄势 | 典雅 3.0制衣",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "蓄势"
+                        }
+                    }
+                },
+                {
+                    "name": "Offbeat",
+                    "label": "错拍 | 甜美 3.0制衣",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "错拍"
+                        }
+                    }
+                },
+                {
+                    "name": "BreakTone",
+                    "label": "破调 | 帅气 3.0制衣",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "破调"
+                        }
+                    }
+                },
+                {
+                    "name": "Echo",
+                    "label": "回响 | 清新 3.0制衣",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "回响"
+                        }
+                    }
+                },
+                {
+                    "name": "Concerto",
+                    "label": "协奏 | 性感 3.0制衣",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "协奏"
+                        }
+                    }
+                },
+                {
+                    "name": "Chord",
+                    "label": "和弦 | 典雅 3.0焕新",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "和弦"
+                        }
+                    }
+                },
+                {
+                    "name": "Allegro",
+                    "label": "急歌 | 甜美 3.0焕新",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "急歌"
+                        }
+                    }
+                },
+                {
+                    "name": "Hollow",
+                    "label": "空鸣 | 帅气 3.0焕新",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "空鸣"
+                        }
+                    }
+                },
+                {
+                    "name": "Accent",
+                    "label": "重音 | 清新 3.0焕新",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "重音"
+                        }
+                    }
+                },
+                {
+                    "name": "Finale",
+                    "label": "终曲 | 性感 3.0焕新",
+                    "pipeline_override": {
+                        "MaaNikki_Monster_Level": {
+                            "expected": "终曲"
                         }
                     }
                 }

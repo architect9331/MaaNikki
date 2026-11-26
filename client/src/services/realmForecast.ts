@@ -457,6 +457,7 @@ function simulateMaterialTrend(options: {
 
   const hadVortex = hasGroup(['vortex']);
   const hadChroma = hasGroup(['chroma']);
+  const hadMisi = hasGroup(['misi']);
   const hadJihuaNonBling = primaryItems.some((item) => item.id === SHINY_BUBBLE_ID || item.id === THREAD_ID);
   const halfTarget = initialRemEnergy / 2;
 
@@ -516,6 +517,9 @@ function simulateMaterialTrend(options: {
     }
     if (hadChroma && groupDone(primaryItems, ['chroma'])) {
       recordMilestone('chroma', '2.0 幻彩泡泡备齐', day, energySpent);
+    }
+    if (hadMisi && groupDone(primaryItems, ['misi'])) {
+      recordMilestone('misi', '3.0 弥思泡泡备齐', day, energySpent);
     }
     if (
       hadJihuaNonBling &&

@@ -11,7 +11,13 @@ import { ImageIcon } from './WardrobePhotoCardModal';
 
 const field = 'rounded-lg border border-border bg-bg-primary px-3 py-1.5 text-xs outline-none focus:border-accent';
 
+export function qualityLabel(quality: number): string {
+  if (quality >= 8) return '星冕';
+  return quality > 0 ? `${quality}★` : '—';
+}
+
 export function suitBackdropClass(quality: number): string {
+  if (quality >= 8) return 'bg-gradient-to-b from-fuchsia-500/16 via-amber-400/12 to-bg-primary/60';
   if (quality >= 5) return 'bg-gradient-to-b from-amber-500/14 via-rose-500/8 to-bg-primary/60';
   if (quality === 4) return 'bg-gradient-to-b from-violet-500/14 via-accent/8 to-bg-primary/60';
   return 'bg-gradient-to-b from-sky-500/10 via-bg-primary/30 to-bg-primary/60';
@@ -111,7 +117,7 @@ export function WardrobeSuitDetailModal({
           <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3.5">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <span className="rounded-md bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
-                {suit.quality}★ · {ATTRIBUTES[suit.major] ?? '综合'}
+                {qualityLabel(suit.quality)} · {ATTRIBUTES[suit.major] ?? '综合'}
               </span>
               <h3 className="truncate text-base font-semibold">{displayName}</h3>
               <span className={clsx('rounded-md px-2 py-0.5 text-[11px] font-medium', displayComplete ? 'bg-success/15 text-success' : displayObtained > 0 ? 'bg-accent/10 text-accent' : 'bg-bg-primary text-text-muted')}>

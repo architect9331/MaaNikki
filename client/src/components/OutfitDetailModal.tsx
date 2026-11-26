@@ -106,7 +106,7 @@ function PieceRow({ piece }: { piece: ResolvedOutfitPiece }) {
       </span>
       <span className="min-w-0 font-medium text-text-primary">{piece.name}</span>
       {piece.quality > 0 && (
-        <span className="shrink-0 text-[11px] tabular-nums text-text-muted">{piece.quality}★</span>
+        <span className="shrink-0 text-[11px] tabular-nums text-text-muted">{piece.quality >= 8 ? '星冕' : `${piece.quality}★`}</span>
       )}
       {piece.variantLabel && (
         <span className="shrink-0 rounded-full border border-accent/25 bg-accent/10 px-2 py-0.5 text-[10px] text-accent">

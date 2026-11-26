@@ -61,7 +61,7 @@ MAX_LEVEL = 10
 RENEWED_LEVEL = 11
 ACCESSORY_PARTS = {
     "270", "271", "272", "273", "274", "275", "276", "277", "278", "279",
-    "292", "293", "294", "295", "296",
+    "287", "292", "293", "294", "295", "296",
 }
 
 
@@ -145,7 +145,7 @@ class RejuvenateModel:
         )
         for gid, g in entries:
             part = str(g.get("part") or "")
-            if not part or part == "413" or part.startswith("28"):
+            if not part or part == "413" or part in MAKEUP_PARTS:
                 continue
             cname = clean_clothing_name(g.get("name", ""))
             grp = str(g.get("group") or "")

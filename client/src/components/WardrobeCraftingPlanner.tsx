@@ -356,6 +356,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
                 </select>
                 <select aria-label="星级" className={planField} value={quality} onChange={(event) => setQuality(event.target.value)}>
                   <option value="all">全部星级</option>
+                  <option value="8">星冕</option>
                   <option value="5">5 星</option>
                   <option value="4">4 星</option>
                   <option value="3">3 星</option>
@@ -409,7 +410,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
                       className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
                     >
                       {group.suit && <ChevronRight className={clsx('h-3.5 w-3.5 shrink-0 text-text-muted transition-transform', open && 'rotate-90')} />}
-                      <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[11px] font-medium text-accent">{group.quality}★</span>
+                      <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[11px] font-medium text-accent">{group.quality >= 8 ? '星冕' : `${group.quality}★`}</span>
                       <span className="truncate font-medium text-text-primary">{group.title}</span>
                       {!group.suit && <span className="shrink-0 text-text-muted">· {group.missing[0].part}</span>}
                     </button>

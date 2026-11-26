@@ -26,7 +26,7 @@ import {
 } from '@/services/scoring/wardrobeBrowserData';
 import { Segmented, Tile } from './ui/FeaturePage';
 import { WardrobePhotoCardModal } from './WardrobePhotoCardModal';
-import { LevelBadgeInput, suitBackdropClass, WardrobeSuitDetailModal } from './WardrobeSuitDetailModal';
+import { LevelBadgeInput, qualityLabel, suitBackdropClass, WardrobeSuitDetailModal } from './WardrobeSuitDetailModal';
 
 const field = 'rounded-lg border border-border bg-bg-primary px-3 py-1.5 text-xs outline-none focus:border-accent';
 const card = 'rounded-2xl border border-border bg-bg-secondary p-4 shadow-xs';
@@ -178,7 +178,7 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
           </>}
         </select>
         <select aria-label="星级筛选" className={field} value={qualityFilter} onChange={(e) => setQualityFilter(e.target.value)}>
-          <option value="all">全部星级</option><option value="5">5 星</option><option value="4">4 星</option><option value="3">3 星</option>
+          <option value="all">全部星级</option><option value="8">星冕</option><option value="5">5 星</option><option value="4">4 星</option><option value="3">3 星</option>
         </select>
         <select aria-label="主属性筛选" className={field} value={majorFilter} onChange={(e) => setMajorFilter(e.target.value)}>
           <option value="all">全部主属性</option>{ATTRIBUTES.map((name, idx) => <option key={name} value={idx}>{name}</option>)}
@@ -276,7 +276,7 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
                     </div>
                   )}
                   <span className="absolute left-2 top-2 rounded-md border border-border/60 bg-bg-secondary/85 px-1.5 py-0.5 text-[10px] font-medium text-accent backdrop-blur-xs">
-                    {suit.quality}★ · {ATTRIBUTES[suit.major] ?? '综合'}
+                    {qualityLabel(suit.quality)} · {ATTRIBUTES[suit.major] ?? '综合'}
                   </span>
                   <span className={clsx(
                     'absolute right-2 top-2 rounded-md border px-1.5 py-0.5 text-[10px] font-medium tabular-nums backdrop-blur-xs',
@@ -362,7 +362,7 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
       <div className="overflow-hidden rounded-xl border border-border bg-bg-secondary divide-y divide-border">
         {filteredPieces.slice(0, limit).map((piece) => (
           <div key={piece.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-xs">
-            <span className="rounded bg-accent/10 px-1.5 py-0.5 text-[11px] font-medium text-accent">{piece.quality}★ {ATTRIBUTES[piece.major] ?? ''}</span>
+            <span className="rounded bg-accent/10 px-1.5 py-0.5 text-[11px] font-medium text-accent">{qualityLabel(piece.quality)} {ATTRIBUTES[piece.major] ?? ''}</span>
             <span className="w-24 shrink-0 truncate text-text-muted">{piece.partName}</span>
             <div className="min-w-0 flex-1">
               <span className={clsx('font-medium', piece.owned ? 'text-text-primary' : 'text-text-muted')}>{piece.name}</span>
@@ -446,7 +446,7 @@ export function WardrobeBrowser({ refreshToken }: { refreshToken: number }) {
           } satisfies OutfitResult}
           match={{
             name: shareName,
-            group: useVariant ? `${suit.quality}★ 套装收藏 · ${variant.label}` : `${suit.quality}★ 套装收藏`,
+            group: useVariant ? `${qualityLabel(suit.quality)} 套装收藏 · ${variant.label}` : `${qualityLabel(suit.quality)} 套装收藏`,
             area: 1,
             weights: [0, 0, 0, 0, 0],
             tags: {},

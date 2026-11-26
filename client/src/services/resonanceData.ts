@@ -17,7 +17,7 @@ export function historyRows(data: ResonanceHistory): HistoryRow[] {
 }
 
 /** Pulls spent on this copy; the counters reset at the previous copy of that rarity. */
-const pityOf = (row: NotebookPull) => (row.rarity === 5 ? row.times_from_last_five_stars : row.times_from_last_four_stars) + 1;
+const pityOf = (row: NotebookPull) => (row.rarity >= 5 ? row.times_from_last_five_stars : row.times_from_last_four_stars) + 1;
 const average = (values: number[]) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 
 function today() {
@@ -98,7 +98,7 @@ export function resonanceSummary(data: ResonanceHistory) {
     const standard = kind === 1;
     for (const row of rows) {
       const pity = pityOf(row);
-      if (row.rarity === 5) {
+      if (row.rarity >= 5) {
         (standard ? groups.standardFive : groups.limitedFive).push(pity);
         if (distribution[pity - 1]) distribution[pity - 1].count++;
       } else {
@@ -135,7 +135,7 @@ export function activeBanners(data: ResonanceHistory) {
     const rows = Object.values(data.history.notebook.pulls[banner.id] ?? {}).sort((a, b) => a.pool_cnt - b.pool_cnt);
     const last = rows[rows.length - 1];
     const hasFiveStar = banner.kind !== 3;
-    const lastFive = hasFiveStar ? [...rows].reverse().find((row) => row.rarity === 5) : undefined;
+    const lastFive = hasFiveStar ? [...rows].reverse().find((row) => row.rarity >= 5) : undefined;
     const since = hasFiveStar && last ? last.pool_cnt - (lastFive?.pool_cnt ?? -1) : 0;
     const bannerPulls = data.history.banners[banner.id]?.pulls.length ?? 0;
     const notebookPulls = last ? last.pool_cnt + 1 : 0;
@@ -148,7 +148,7 @@ export function activeBanners(data: ResonanceHistory) {
     const missingRarities = bannerOutfits.flatMap((outfit) =>
       outfit.items.filter((item) => !(pulls.get(item)?.length)).map(() => outfit.rarity));
     const obtained = total - missingRarities.length;
-    const fiveMissing = missingRarities.filter((rarity) => rarity === 5).length;
+    const fiveMissing = missingRarities.filter((rarity) => rarity >= 5).length;
     const fourMissing = missingRarities.length - fiveMissing;
     const fiveAvg = summary.fiveAverage || 18;
     const fourAvg = banner.kind === 3

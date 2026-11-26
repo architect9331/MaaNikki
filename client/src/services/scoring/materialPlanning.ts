@@ -7,12 +7,13 @@ export const DAILY_ENERGY = 280;
 export const RENEWED_LEVEL = 11;
 export const MAX_LEVEL = 10;
 
-export type MaterialGroup = 'crystal' | 'jihua' | 'vortex' | 'chroma' | 'world';
+export type MaterialGroup = 'crystal' | 'jihua' | 'vortex' | 'chroma' | 'misi' | 'world';
 export const MATERIAL_GROUP_LABELS: Record<MaterialGroup, string> = {
   crystal: '魔物试炼 · 制衣晶石',
   jihua: '素材激化 · 泡泡 / 丝线 / 噗灵',
   vortex: '魔物试炼 · 涡影泡泡（1.0）',
   chroma: '魔物试炼 · 幻彩泡泡（2.0）',
+  misi: '魔物试炼 · 弥思泡泡（3.0）',
   world: '大世界采集物',
 };
 
@@ -41,7 +42,10 @@ export function materialGroup(meta?: CraftingMaterialMeta): MaterialGroup {
   if (!meta) return 'world';
   if (meta.kind === 'monster_craft') return 'crystal';
   if (meta.kind === 'jihua') return 'jihua';
-  if (meta.kind === 'monster_glow') return meta.name.includes('幻彩') ? 'chroma' : 'vortex';
+  if (meta.kind === 'monster_glow') {
+    if (meta.name.includes('弥思')) return 'misi';
+    return meta.name.includes('幻彩') ? 'chroma' : 'vortex';
+  }
   return 'world';
 }
 

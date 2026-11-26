@@ -67,9 +67,9 @@ def normalize_renewal_scope(scope) -> str:
 
 def matches_renewal_scope(quality: int, in_suit: bool, scope: str) -> bool:
     if scope == "five_star":
-        return quality == 5
+        return quality >= 5
     if scope == "five_plus_four_suits":
-        return quality == 5 or (quality == 4 and in_suit)
+        return quality >= 5 or (quality == 4 and in_suit)
     if scope == "four_plus":
         return quality >= 4
     return True

@@ -12,7 +12,7 @@ import { MapResourcesPanel } from './MapResourcesPanel';
 import { PearpalStatusPill } from './PearpalAccount';
 import { ResonanceControl } from './ResonanceControl';
 import { FeaturePage, primaryButton, secondaryButton, Segmented, StatusBar } from './ui/FeaturePage';
-import { suitBackdropClass } from './WardrobeSuitDetailModal';
+import { qualityLabel, suitBackdropClass } from './WardrobeSuitDetailModal';
 
 function timeLabel(value: number | null | undefined) {
   return value ? new Date(value * 1000).toLocaleString('zh-CN', { hour12: false }) : '尚未同步';
@@ -43,6 +43,7 @@ function bannerKindLabel(kind: number | undefined) {
   if (kind === 1) return '常驻池';
   if (kind === 2) return '限定五星池';
   if (kind === 3) return '限定四星池';
+  if (kind === 5) return '星冕限定池';
   return '共鸣池';
 }
 const selectStyle = 'max-w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs outline-none focus:border-accent';
@@ -420,7 +421,7 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
             <Segmented label="记录视图" value={view} onChange={(next) => { setView(next); setBanner('all'); setRarity('all'); }} options={[['outfits', '套装收藏'], ['records', '逐条记录'], ['map_resources', '大地图资源']] as const} />
             {view !== 'map_resources' && <>
               <select value={banner} onChange={(event) => setBanner(event.target.value)} aria-label="卡池" className={clsx(selectStyle, '!py-1.5 max-w-64')}><option value="all">全部卡池（{knownBanners.length}）</option>{knownBanners.map((id) => <option key={id} value={id}>{bannerMeta.get(id)?.optionLabel || banners.get(id)?.name || '共鸣 ' + id}</option>)}</select>
-              <select value={rarity} onChange={(event) => setRarity(event.target.value)} aria-label="星级" className={clsx(selectStyle, '!py-1.5')}><option value="all">全部星级</option><option value="5">五星</option><option value="4">四星</option>{view === 'records' && <option value="3">三星</option>}</select>
+              <select value={rarity} onChange={(event) => setRarity(event.target.value)} aria-label="星级" className={clsx(selectStyle, '!py-1.5')}><option value="all">全部星级</option><option value="8">星冕</option><option value="5">五星</option><option value="4">四星</option>{view === 'records' && <option value="3">三星</option>}</select>
               {view === 'outfits' && <select value={completion} onChange={(event) => setCompletion(event.target.value)} aria-label="套装进度" className={clsx(selectStyle, '!py-1.5')}><option value="all">全部进度</option><option value="incomplete">尚未集齐</option><option value="complete">已集齐</option></select>}
               <label className="flex min-w-36 flex-1 items-center gap-2 rounded-lg border border-border bg-bg-primary px-3 focus-within:border-accent"><Search className="h-3.5 w-3.5 text-text-muted" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={view === 'outfits' ? '搜索套装、卡池或部件' : '搜索物品、套装或卡池'} aria-label="搜索记录" className="min-w-0 flex-1 bg-transparent py-1.5 text-xs outline-none" /></label>
             </>}
@@ -611,9 +612,9 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
                   )}
                   <span className={clsx(
                     'absolute left-1.5 top-1.5 rounded-md border border-border/60 bg-bg-secondary/85 px-1.5 py-0.5 text-[10px] font-semibold backdrop-blur-xs',
-                    outfit.rarity === 5 ? 'text-amber-600 dark:text-amber-400' : 'text-accent',
+                    outfit.rarity >= 8 ? 'text-fuchsia-600 dark:text-fuchsia-400' : outfit.rarity === 5 ? 'text-amber-600 dark:text-amber-400' : 'text-accent',
                   )}>
-                    {outfit.rarity}★
+                    {qualityLabel(outfit.rarity)}
                   </span>
                   {full && (
                     <span className="absolute bottom-1.5 left-1.5 rounded-md border border-success/30 bg-success/15 px-1.5 py-0.5 text-[10px] font-medium text-success backdrop-blur-xs">
@@ -626,7 +627,7 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
                     <div className="min-w-0 flex-1">
                       <h3 className="truncate text-sm font-semibold" title={outfit.name}>{outfit.name}</h3>
                       <div className="mt-1 flex items-center gap-1.5 text-xs text-text-muted">
-                        <span className={clsx('tracking-tight', outfit.rarity === 5 ? 'text-amber-500' : 'text-accent')} aria-label={outfit.rarity + ' 星'}>{'★'.repeat(outfit.rarity)}</span>
+                        <span className={clsx('tracking-tight', outfit.rarity >= 8 ? 'font-medium text-fuchsia-500' : outfit.rarity === 5 ? 'text-amber-500' : 'text-accent')} aria-label={outfit.rarity >= 8 ? '星冕品质' : outfit.rarity + ' 星'}>{outfit.rarity >= 8 ? '✦ 星冕' : '★'.repeat(outfit.rarity)}</span>
                         {outfit.banner && (
                           <button
                             type="button"
@@ -648,7 +649,7 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
                     <div className={clsx('h-full rounded-full transition-all', full ? 'bg-success' : 'bg-accent')} style={{ width: `${pct}%` }} />
                   </div>
                   <ul className="mt-2.5 grid grid-cols-2 gap-1.5 sm:grid-cols-3">{outfit.parts.map((part) => {
-                    const lucky = part.count > 0 && part.pity[0] === low && low <= (outfit.rarity === 5 ? 10 : 5);
+                    const lucky = part.count > 0 && part.pity[0] === low && low <= (outfit.rarity >= 5 ? 10 : 5);
                     return <li key={part.item} title={part.name + (part.count ? ` · 第 ${part.pity.join('、')} 抽` : ' · 未获得')}
                       className={clsx('flex min-w-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs', part.count ? 'border border-border/50 bg-bg-primary/90' : 'border border-dashed border-border-strong text-text-muted')}>
                       <span className="min-w-0 flex-1 truncate">{part.name}</span>
@@ -664,9 +665,9 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
               const meta = bannerMeta.get(row.bannerId);
               const thumbKey = meta?.thumbKeys[0];
               const thumbUrl = thumbKey ? thumbMap[thumbKey] : undefined;
-              return <tr key={row.key} className={clsx('border-t border-border/60 transition-colors hover:bg-bg-hover/50', row.rarity === 5 && 'bg-amber-500/6')}>
-                <td className={clsx('whitespace-nowrap px-4 py-2 tabular-nums text-text-secondary', row.rarity === 5 && 'border-l-2 border-l-amber-500')}>{pullTime(row.time)}</td>
-                <td className="px-4 py-2"><span className={clsx('mr-2 inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums', row.rarity === 5 ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : row.rarity === 4 ? 'bg-accent/12 text-accent' : 'bg-bg-primary text-text-muted')}>{row.rarity || '—'}★</span><span title={row.item} className={clsx(row.rarity === 5 && 'font-medium text-text-primary')}>{row.name}</span></td>
+              return <tr key={row.key} className={clsx('border-t border-border/60 transition-colors hover:bg-bg-hover/50', row.rarity >= 8 ? 'bg-fuchsia-500/6' : row.rarity === 5 && 'bg-amber-500/6')}>
+                <td className={clsx('whitespace-nowrap px-4 py-2 tabular-nums text-text-secondary', row.rarity >= 8 ? 'border-l-2 border-l-fuchsia-500' : row.rarity === 5 && 'border-l-2 border-l-amber-500')}>{pullTime(row.time)}</td>
+                <td className="px-4 py-2"><span className={clsx('mr-2 inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums', row.rarity >= 8 ? 'bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-400' : row.rarity === 5 ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : row.rarity === 4 ? 'bg-accent/12 text-accent' : 'bg-bg-primary text-text-muted')}>{qualityLabel(row.rarity)}</span><span title={row.item} className={clsx(row.rarity >= 5 && 'font-medium text-text-primary')}>{row.name}</span></td>
                 <td className="px-4 py-2 text-text-secondary">
                   <button
                     type="button"

@@ -526,6 +526,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
                 </select>
                 <select aria-label="星级" className={planField} value={quality} onChange={(event) => setQuality(event.target.value)}>
                   <option value="all">全部星级</option>
+                  <option value="8">星冕</option>
                   <option value="5">5 星</option>
                   <option value="4">4 星</option>
                   <option value="3">3 星</option>
@@ -568,7 +569,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
                       onChange={(event) => setTarget(group, event.target.checked ? topLevel(group) : null)}
                     />
                   )}
-                  <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[11px] font-medium text-accent">{group.quality}★</span>
+                  <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[11px] font-medium text-accent">{group.quality >= 8 ? '星冕' : `${group.quality}★`}</span>
                   {isPriority && (
                     <span
                       className="shrink-0 rounded bg-warning/15 px-1.5 py-0.5 text-[10px] font-medium text-warning"
@@ -648,7 +649,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
               realmEnergyLabel="幻境所需能量"
               priorityOrder={priorityOrder}
               priorityNeedIds={priorityNeedIds}
-              groups={['jihua', 'vortex', 'chroma', 'crystal', 'world']}
+              groups={['jihua', 'vortex', 'chroma', 'misi', 'crystal', 'world']}
               onStockChange={setStock}
               headerAction={<ManualReadButton targetMode="backpack" idleLabel="更新背包" compact />}
               empty={mode === 'selected' && !pickedCount ? '在左侧勾选想升级或焕新的衣服，这里会算出需要、库存与还差多少。' : '计划里的衣服都已养成到目标，不需要材料'}

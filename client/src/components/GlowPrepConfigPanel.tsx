@@ -10,7 +10,7 @@ export interface GlowMaterialDef {
   id: string;
   name: string;
   shortName: string;
-  group: 'basic' | 'vortex' | 'chroma';
+  group: 'basic' | 'vortex' | 'chroma' | 'misi';
   stage: string;
   drop: number;
   energy: number;
@@ -31,6 +31,11 @@ export const GLOW_MATERIAL_DEFS: GlowMaterialDef[] = [
   { id: '432042829', name: '幻彩泡泡・甜美', shortName: '甜美 · 失重', group: 'chroma', stage: '魔物试炼 · 失重 (2.0)', drop: 50, energy: 40, quickSteps: [[100, '+100'], [300, '+300']] },
   { id: '2530246569', name: '幻彩泡泡・性感', shortName: '性感 · 驱逐', group: 'chroma', stage: '魔物试炼 · 驱逐 (2.0)', drop: 50, energy: 40, quickSteps: [[100, '+100'], [300, '+300']] },
   { id: '333473796', name: '幻彩泡泡・帅气', shortName: '帅气 · 暴行', group: 'chroma', stage: '魔物试炼 · 暴行 (2.0)', drop: 50, energy: 40, quickSteps: [[100, '+100'], [300, '+300']] },
+  { id: '547982283', name: '弥思泡泡・典雅', shortName: '典雅 · 和弦', group: 'misi', stage: '魔物试炼 · 和弦 (3.0)', drop: 50, energy: 40, quickSteps: [[100, '+100'], [300, '+300']] },
+  { id: '1471069021', name: '弥思泡泡・清新', shortName: '清新 · 重音', group: 'misi', stage: '魔物试炼 · 重音 (3.0)', drop: 50, energy: 40, quickSteps: [[100, '+100'], [300, '+300']] },
+  { id: '3201113704', name: '弥思泡泡・甜美', shortName: '甜美 · 急歌', group: 'misi', stage: '魔物试炼 · 急歌 (3.0)', drop: 50, energy: 40, quickSteps: [[100, '+100'], [300, '+300']] },
+  { id: '3114326641', name: '弥思泡泡・性感', shortName: '性感 · 终曲', group: 'misi', stage: '魔物试炼 · 终曲 (3.0)', drop: 50, energy: 40, quickSteps: [[100, '+100'], [300, '+300']] },
+  { id: '3385470718', name: '弥思泡泡・帅气', shortName: '帅气 · 空鸣', group: 'misi', stage: '魔物试炼 · 空鸣 (3.0)', drop: 50, energy: 40, quickSteps: [[100, '+100'], [300, '+300']] },
 ];
 
 const field = 'rounded-lg border border-border bg-bg-secondary px-2 py-1 text-xs outline-none focus:border-accent';
@@ -46,7 +51,7 @@ export function GlowPrepConfigPanel({ externalMaterials, accountKey: propKey, on
   const activeUid = useAccountStateStore((state) => state.data?.uid);
   const [accountKey, setAccountKey] = useState(propKey ?? '');
   const [materials, setMaterials] = useState<MaterialsState>(externalMaterials ?? {});
-  const [tab, setTab] = useState<'active' | 'vortex' | 'chroma' | 'basic'>(() =>
+  const [tab, setTab] = useState<'active' | 'vortex' | 'chroma' | 'misi' | 'basic'>(() =>
     hasPositiveTargets(externalMaterials) ? 'active' : 'vortex',
   );
   const initializedAccountRef = useRef<string | null>(
@@ -162,6 +167,7 @@ export function GlowPrepConfigPanel({ externalMaterials, accountKey: propKey, on
           ['active', `已设目标 (${activeDefs.length})`],
           ['vortex', '1.0 涡影泡泡 (5)'],
           ['chroma', '2.0 幻彩泡泡 (5)'],
+          ['misi', '3.0 弥思泡泡 (5)'],
           ['basic', '闪亮泡泡 / 丝线 / 噗灵'],
         ] as const).map(([id, label]) => (
           <button key={id} type="button" onClick={() => setTab(id)}
