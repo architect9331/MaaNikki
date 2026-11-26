@@ -63,11 +63,15 @@ CONFIRM_OK_BOX = [703, 439, 48, 25]
 COURSE_TIMER_ROI = [540, 18, 200, 60]
 COURSE_TIMER_INITIAL_SECONDS = 25.0
 COURSE_TIMER_MIN_VALID_SECONDS = 15.0
-# Strictly below 25.0 so a static 00:25.000 shown before/during 3-2-1 cannot trigger early.
-COURSE_TIMER_MAX_TICKING_SECONDS = 24.95
+# Strictly below 25.000 so frozen 00:25.000/00:25.009 stays static while real first-tick
+# frames (e.g. 00:24.979 / 00:24.959) are accepted immediately instead of adding a 3rd OCR cycle.
+COURSE_TIMER_MAX_TICKING_SECONDS = 24.995
 COURSE_TIMER_POLL_INTERVAL_SECONDS = 0.05
-COURSE_TIMER_POLL_START_NORMAL_SECONDS = 3.0
+COURSE_TIMER_POLL_START_NORMAL_SECONDS = 2.0
 COURSE_TIMER_POLL_START_RETRY_SECONDS = 1.0
+# Accept an already-ticking course countdown unlocked up to 8s before trigger_at (e.g. when
+# replay dialogue advances early) rather than rejecting live frames and freezing until fallback.
+COURSE_TIMER_EARLY_UNLOCK_SLACK_SECONDS = 8.0
 # Extend polling when the pre-unlock 00:25.000 banner is positively visible so slower
 # GPUs/CPUs still collect confirmed countdown samples instead of falling back early.
 COURSE_TIMER_MAX_POLL_EXTEND_SECONDS = 12.0
@@ -83,9 +87,10 @@ COURSE_GO_OFFSET_CAMERA_ASSIST_OFF = 0.0
 ENTRY_FEE_BLING = 100
 CLEAR_REWARD_BLING = 700
 # Fallback start waits when timer OCR never triggers (normal NPC dialogue vs failure retry),
-# wide enough that typical 4.5-6.1s / 2.5-3.7s unlocks still align cleanly via ticking OCR.
-COURSE_FALLBACK_START_WAIT_NORMAL = 6.20
-COURSE_FALLBACK_START_WAIT_RETRY = 3.80
+# wide enough that slower fade/3-2-1 countdowns (4.0-5.5s on retry, 4.5-6.5s on normal)
+# still align via live ticking OCR instead of launching early while movement is locked.
+COURSE_FALLBACK_START_WAIT_NORMAL = 7.00
+COURSE_FALLBACK_START_WAIT_RETRY = 6.00
 # Immediate-start laser-gate routes calibrated against exact UE5 gate geometry, live G1 phase,
 # measured uphill run speed (~5.8-6.0 m/s), and Camera Horizontal Assist yaw rate: both modes
 # open immediately with a right turn (W+D) to clear Gate 1 on the right without waiting, cut
@@ -555,9 +560,7 @@ class MinigameBlingRun(Runtime):
                 if (t_after - t_before) <= 0.15
                 else (t_after - 0.015)
             )
-            ocr_started = time.monotonic()
             remaining, is_static = self._detect_course_timer_state(frame)
-            ocr_elapsed = max(0.0, time.monotonic() - ocr_started)
             if is_static:
                 # Seeing frozen 00:25.000 confirms we are inside the 3-2-1 countdown:
                 # discard any earlier single-frame OCR misread, bound future t_go from
@@ -587,7 +590,7 @@ class MinigameBlingRun(Runtime):
                 min_valid_t_go = (
                     last_static_at - 0.15
                     if last_static_at is not None
-                    else trigger_at - 0.5
+                    else trigger_at - COURSE_TIMER_EARLY_UNLOCK_SLACK_SECONDS
                 )
                 if t_go >= min_valid_t_go:
                     if first_sample is not None:
@@ -599,13 +602,12 @@ class MinigameBlingRun(Runtime):
                         ):
                             aligned_t_go = 0.5 * (prev_t_go + t_go)
                             break
-                    # When a prior frozen 00:25.000 already confirmed the 3-2-1 countdown
-                    # and OCR itself is slow (>=0.25s per frame), accept a freshly ticking
-                    # frame directly so slow GPUs do not pay a second OCR cycle of launch lag.
+                    # When a prior frozen 00:25.000 already confirmed the 3-2-1 countdown,
+                    # a freshly ticking frame already completes a 2-frame 25.000 -> 24.xxx
+                    # transition; launch immediately without paying a third OCR cycle.
                     if (
                         not allow_prehold
                         and last_static_at is not None
-                        and ocr_elapsed >= 0.25
                         and remaining >= COURSE_TIMER_INITIAL_SECONDS - 2.0
                     ):
                         aligned_t_go = t_go
@@ -617,11 +619,11 @@ class MinigameBlingRun(Runtime):
                         max(poll_deadline, now + COURSE_TIMER_CONFIRM_EXTEND_SECONDS),
                     )
                     # When forward is not yet pressed, confirm the second ticking frame
-                    # quickly (~30ms sleep + capture/OCR) so post-tick departure lag stays low.
+                    # quickly (~15ms sleep + capture/OCR) so post-tick departure lag stays low.
                     interval = (
                         COURSE_TIMER_POLL_INTERVAL_SECONDS
                         if fwd_down_at is not None
-                        else min(COURSE_TIMER_POLL_INTERVAL_SECONDS, 0.03)
+                        else min(COURSE_TIMER_POLL_INTERVAL_SECONDS, 0.015)
                     )
                     sleep_s = min(interval, max(0.0, _effective_deadline() - now))
                     if sleep_s <= 0:
@@ -716,7 +718,7 @@ class MinigameBlingRun(Runtime):
                     min_valid_t_go = (
                         last_static_at - 0.15
                         if last_static_at is not None
-                        else trigger_at - 0.5
+                        else trigger_at - COURSE_TIMER_EARLY_UNLOCK_SLACK_SECONDS
                     )
                     if t_go >= min_valid_t_go:
                         if first_sample is not None:
