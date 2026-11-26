@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "test": "node --test --test-isolation=none \"tests/*.test.ts\"",
     "tauri": "tauri",
     "build:app": "tauri build --no-bundle -- --locked",
     "dev:app": "tauri dev"

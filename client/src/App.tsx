@@ -71,6 +71,7 @@ import { getAllLogsFromBackend, type LogEntryDto } from '@/utils/logStdout';
 import { cleanupExpiredLogs } from '@/utils/logRetention';
 import { useMaaCallbackLogger, useMaaAgentLogger } from '@/utils/useMaaCallbackLogger';
 import { subscribeBackendEvent } from '@/utils/backendEvent';
+import { selectStartupInstance } from '@/utils/startupInstance';
 import { getInterfaceLangKey } from '@/i18n';
 import { applyTheme, resolveThemeMode, registerCustomAccent, clearCustomAccents } from '@/themes';
 import { Toaster, toast } from 'sonner';
@@ -443,6 +444,8 @@ function App() {
   const updateCheckRunningRef = useRef(false);
   const lastAutoUpdateCheckRef = useRef(Date.now());
   const pendingAutoTasksRef = useRef(false);
+  // 自动执行选中的实例：随 mxu-start-tasks 事件传给启动方，避免执行时再读活动实例而跑错账号。
+  const autoRunTargetInstanceIdRef = useRef<string | null>(null);
   // 自动任务已分发但尚未完成启动时，也要阻止下载完成触发自动安装。
   // 否则小体积更新可能在 500ms 的任务分发延迟或连接准备期间先完成下载。
   const autoTaskLaunchPendingRef = useRef(false);
@@ -1114,28 +1117,34 @@ function App() {
           }
 
           // 检查 -i/--instance 命令行参数指定的实例（仅 autostart 模式生效）
-          let cliInstanceId: string | undefined;
+          // 安全要求：指定了实例名却找不到、或重名时，不启动任何实例，也不能回退到
+          // 「启动后自动执行」的默认实例，否则多账号托管场景下可能操作到错误的账号。
+          let cliInstanceName: string | null = null;
           if (isAutoStart) {
-            const startInstance = await invoke<string | null>('get_start_instance');
-            if (startInstance) {
-              const matched = useAppStore
-                .getState()
-                .instances.find((i) => i.name === startInstance);
-              if (matched) {
-                log.info('命令行 --instance 参数：匹配实例:', startInstance);
-                cliInstanceId = matched.id;
-              } else {
-                log.warn('命令行 --instance 参数：未找到名为', startInstance, '的实例');
-              }
-            }
+            cliInstanceName = await invoke<string | null>('get_start_instance');
           }
 
           const { autoStartInstanceId, autoRunOnLaunch } = useAppStore.getState();
-          // 命令行指定的实例优先，否则使用配置中的自动执行实例
-          const targetInstanceId = cliInstanceId || autoStartInstanceId;
+          const startupSelection = selectStartupInstance(
+            useAppStore.getState().instances,
+            cliInstanceName,
+            autoStartInstanceId,
+          );
           // 开机自启动 或 手动启动且勾选了"手动启动时也自动执行"
           const shouldAutoRun = isAutoStart || autoRunOnLaunch;
-          if (shouldAutoRun && targetInstanceId) {
+          if (startupSelection.kind === 'invalid') {
+            const reason =
+              startupSelection.reason === 'ambiguous'
+                ? `存在多个名为「${startupSelection.name}」的实例，无法确定目标`
+                : `未找到名为「${startupSelection.name}」的实例`;
+            const message = `命令行 --instance 参数：${reason}，跳过自动执行（不回退到默认实例）`;
+            log.error(message);
+            // 自启动模式默认隐藏窗口，静默跳过会让用户以为任务已执行；失败必须可见。
+            void showWindow();
+            void focusWindow();
+            toast.error(message);
+          } else if (shouldAutoRun && startupSelection.kind !== 'none') {
+            const targetInstanceId = startupSelection.instanceId;
             const targetInstance = useAppStore
               .getState()
               .instances.find((i) => i.id === targetInstanceId);
@@ -1164,6 +1173,7 @@ function App() {
               }
 
               autoStartTasksPending = true;
+              autoRunTargetInstanceIdRef.current = targetInstanceId;
             } else {
               log.warn('自动执行：目标实例不存在，跳过自动执行');
             }
@@ -1182,6 +1192,7 @@ function App() {
             new CustomEvent('mxu-start-tasks', {
               detail: {
                 source: 'autostart',
+                instanceId: autoRunTargetInstanceIdRef.current ?? undefined,
                 onSettled: () => {
                   autoTaskLaunchPendingRef.current = false;
                   // 启动失败时任务不会产生 running -> idle 状态变化，需要在这里补一次安装检查；
@@ -1584,7 +1595,12 @@ function App() {
       log.info('下载失败或取消，分发挂起的自动任务');
       setTimeout(() => {
         document.dispatchEvent(
-          new CustomEvent('mxu-start-tasks', { detail: { source: 'autostart' } }),
+          new CustomEvent('mxu-start-tasks', {
+            detail: {
+              source: 'autostart',
+              instanceId: autoRunTargetInstanceIdRef.current ?? undefined,
+            },
+          }),
         );
       }, 500);
     }
@@ -1597,7 +1613,12 @@ function App() {
       log.info('弹窗关闭，分发挂起的自动任务');
       setTimeout(() => {
         document.dispatchEvent(
-          new CustomEvent('mxu-start-tasks', { detail: { source: 'autostart' } }),
+          new CustomEvent('mxu-start-tasks', {
+            detail: {
+              source: 'autostart',
+              instanceId: autoRunTargetInstanceIdRef.current ?? undefined,
+            },
+          }),
         );
       }, 500);
     }

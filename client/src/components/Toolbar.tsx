@@ -19,6 +19,7 @@ import { isControllerAllowed, isResourceAllowed, isTaskCompatible } from '@/stor
 import { maaService, TaskStartRejectedError } from '@/services/maaService';
 import { buildTaskOptionSummary } from '@/services/telemetryService';
 import { collectPasswordPlaintextsFromRunnableTasks } from '@/utils/passwordOptionValues';
+import { resolveStartTaskTarget } from '@/utils/startTaskTarget';
 import clsx from 'clsx';
 import {
   loggers,
@@ -1724,7 +1725,12 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
   useEffect(() => {
     const handleStartTasks = async (evt: Event) => {
       const detail = (evt as CustomEvent | undefined)?.detail as
-        | { source?: string; combo?: string; onSettled?: (started: boolean) => void }
+        | {
+            source?: string;
+            combo?: string;
+            instanceId?: string;
+            onSettled?: (started: boolean) => void;
+          }
         | undefined;
       const isHotkey = detail?.source === 'hotkey' || detail?.source === 'global-hotkey';
       let settled = false;
@@ -1738,10 +1744,28 @@ export function Toolbar({ showAddPanel, onToggleAddPanel, className }: ToolbarPr
         notifySettled(false);
         return;
       }
-      const currentInstance = useAppStore.getState().getActiveInstance();
-      if (!currentInstance) {
+
+      // 自动执行事件携带选择阶段确定的实例 ID：必须按该 ID 执行。若该实例已被删除，
+      // 直接停止，不能退回「当前活动实例」，否则选择与执行之间切换实例会跑错账号。
+      const storeState = useAppStore.getState();
+      const target = resolveStartTaskTarget(
+        storeState.instances,
+        detail?.instanceId,
+        storeState.getActiveInstance(),
+      );
+      if (target.kind === 'missing') {
+        log.error('自动执行：目标实例已不存在，跳过启动（不回退到当前实例）', target.instanceId);
         notifySettled(false);
         return;
+      }
+      if (target.kind === 'none') {
+        notifySettled(false);
+        return;
+      }
+      const currentInstance = target.instance;
+      if (target.kind === 'requested' && storeState.getActiveInstance()?.id !== currentInstance.id) {
+        storeState.setActiveInstance(currentInstance.id);
+        log.info('自动执行：切换到指定实例', currentInstance.name);
       }
 
       const combo = detail?.combo || '';
