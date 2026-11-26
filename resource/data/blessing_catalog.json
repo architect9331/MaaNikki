@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "version": "2026-10-15",
+  "version": "2026-11-27",
   "sources": [
     {
       "title": "官方 1.8 更新公告：月桂兔自动锁定且不可解锁",
@@ -473,6 +473,30 @@
       "source": "丰登庆典"
     },
     {
+      "name": "不醒梦余片",
+      "colors": [
+        "蓝",
+        "粉",
+        "绿",
+        "黄",
+        "彩"
+      ],
+      "rarity": 5,
+      "source": "报时鸟座钟"
+    },
+    {
+      "name": "唯有晨光",
+      "colors": [
+        "黄",
+        "粉",
+        "蓝",
+        "绿",
+        "彩"
+      ],
+      "rarity": 5,
+      "source": "报时鸟座钟"
+    },
+    {
       "name": "假面魔术",
       "colors": [
         "绿",
@@ -586,6 +610,22 @@
       ],
       "rarity": 3,
       "source": "联动活动（不可常规刷取）"
+    },
+    {
+      "name": "春往何处",
+      "collection_target": false,
+      "lock_mutable": false,
+      "decomposable": false,
+      "maximum_owned": 3,
+      "colors": [
+        "粉",
+        "蓝",
+        "红",
+        "黄",
+        "彩"
+      ],
+      "rarity": 5,
+      "source": "特殊活动（不可常规刷取）"
     }
   ]
 }

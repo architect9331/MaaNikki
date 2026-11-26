@@ -143,5 +143,10 @@
     "name": "饰品·能力手持物",
     "visual_classes": 74,
     "item_ids": 74
+  },
+  "287": {
+    "name": "饰品·幻形饰物",
+    "visual_classes": 0,
+    "item_ids": 5
   }
 }

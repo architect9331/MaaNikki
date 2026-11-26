@@ -140,6 +140,11 @@
       "id": "279",
       "name": "饰品·肤绘",
       "icon": "T_UI_common_icon_clothes_31_s"
+    },
+    {
+      "id": "287",
+      "name": "饰品·幻形饰物",
+      "icon": "T_UI_common_icon_clothes_34_s"
     }
   ]
 }

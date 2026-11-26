@@ -60,9 +60,9 @@
     },
     {
       "path": "resource/model/wardrobe/parts.json",
-      "size": 2644,
-      "sha256": "b5e03448a955a799d791ba1a703ec830132a407aa2f8ddd67954e33674bc28a2",
-      "source": "MaaNikki wardrobe catalog metadata, 2026-11-02, update 2872"
+      "size": 2892,
+      "sha256": "107679c0709da338fede5f161f02da824de2c2fb9d8dbd89463c438977d19da0",
+      "source": "MaaNikki wardrobe catalog metadata, 2026-11-02, update 3017"
     },
     {
       "path": "resource/model/wardrobe/coverage.json",
@@ -84,27 +84,27 @@
     },
     {
       "path": "resource/model/backpack/catalog.json",
-      "size": 318623,
-      "sha256": "be4177ca6d77b3b258a73d21afc591f11a3806e1ed195b46c4f172ef03883a24",
-      "source": "MaaNikki backpack item & crafting icon catalog, update 2872"
+      "size": 242205,
+      "sha256": "2fcbd9bf86eb650e21fc3715a6b180f0143ac4e80e531ab0f3a73422fc920119",
+      "source": "MaaNikki backpack item & crafting icon catalog, update 3017"
     },
     {
       "path": "resource/model/backpack/icons.npz",
-      "size": 6329014,
-      "sha256": "06066c1249ef8612fdf97d843a0424238f3e37de70c6d7890bea17da9510e2b4",
-      "source": "MaaNikki packed 84x84 BGRA backpack icon templates, update 2872"
+      "size": 7398810,
+      "sha256": "65646209934cbae845f7eda8b2a046de591c982d99f944d94025c1bd6a032f00",
+      "source": "MaaNikki packed 84x84 BGRA backpack icon templates, update 3017"
     },
     {
       "path": "resource/model/rejuvenate/categories.json",
-      "size": 3014,
-      "sha256": "dd6bfd56a95b89cdd6da2b0afe03b18855f078929ec2c1b67d1e7928aa3ef946",
-      "source": "MaaNikki Clothing Glow-Up rail categories, update 2872"
+      "size": 3281,
+      "sha256": "49fafadbb174476cb3ff7fd9570a6fa1875b78f9865264d5284a1e551a88de86",
+      "source": "MaaNikki Clothing Glow-Up rail categories, update 3017"
     },
     {
       "path": "resource/model/rejuvenate/icons.npz",
-      "size": 52334,
-      "sha256": "2b864d258581c13bb7cdbf9de5de1b1a33bf945daada26aaee8d64f1eb05c328",
-      "source": "MaaNikki packed 48x48 BGRA glow-up category icons, update 2872"
+      "size": 53931,
+      "sha256": "feceb0e104dafd025da44f76a8a15dc6de90020d1a5bc904400e023aec9579ac",
+      "source": "MaaNikki packed 48x48 BGRA glow-up category icons, update 3017"
     }
   ],
   "source": {
