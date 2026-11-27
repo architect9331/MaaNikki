@@ -39,6 +39,7 @@ const ALLOWED_OVERLAY_FILES: &[&str] = &[
     "resource/data/blessing_catalog.json",
     "resource/data/crafting_catalog.json",
     "resource/data/xinghai_rotation.json",
+    "resource/data/infinite_heart_catalog.json",
     "resource/data/resonance_catalog.json",
     "resource/data/item_sources.json",
     "resource/navigation/materials_catalog_v1.json",

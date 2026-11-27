@@ -32,6 +32,7 @@ CATALOG_FILES: tuple[tuple[str, str], ...] = (
     ("resource/data/blessing_catalog.json", "resource/data/blessing_catalog.json"),
     ("resource/data/crafting_catalog.json", "resource/data/crafting_catalog.json"),
     ("resource/data/xinghai_rotation.json", "resource/data/xinghai_rotation.json"),
+    ("resource/data/infinite_heart_catalog.json", "resource/data/infinite_heart_catalog.json"),
     ("client/src-tauri/src/data/resonance_catalog.json", "resource/data/resonance_catalog.json"),
     ("client/src/services/scoring/itemSources.json", "resource/data/item_sources.json"),
     ("resource/navigation/materials_catalog_v1.json", "resource/navigation/materials_catalog_v1.json"),
@@ -151,6 +152,7 @@ def verify_local_data() -> dict:
     bc = read_json(ROOT / "resource/data/blessing_catalog.json")
     cc = read_json(ROOT / "resource/data/crafting_catalog.json")
     xr = read_json(ROOT / "resource/data/xinghai_rotation.json")
+    ih = read_json(ROOT / "resource/data/infinite_heart_catalog.json")
     rc = read_json(ROOT / "client/src-tauri/src/data/resonance_catalog.json")
     isrc = read_json(ROOT / "client/src/services/scoring/itemSources.json")
     mc = read_json(ROOT / "resource/navigation/materials_catalog_v1.json")
@@ -176,7 +178,7 @@ def verify_local_data() -> dict:
                 if not g or str(g.get("score_id")) not in ws_items:
                     raise ValueError(f"Suit variant {vid} references unknown game_item {gid}")
             suit_variants_count += 1
-    if not bc.get("sets") or not cc.get("sketches") or not xr.get("tasks") or not mc:
+    if not bc.get("sets") or not cc.get("sketches") or not xr.get("tasks") or not ih.get("nodes") or not mc:
         raise ValueError("One or more auxiliary game catalogs are empty")
     if not isinstance(rdc, dict) or not isinstance(rdc.get("codes"), list):
         raise ValueError("redeem_codes.json is missing a valid codes list")
