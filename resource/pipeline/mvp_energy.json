@@ -532,6 +532,21 @@
     "next": [],
     "custom_action": "nikki.ui_click"
   },
+  "MaaNikki_Weekly_Level_Void": {
+    "enabled": false,
+    "recognition": "OCR",
+    "roi": [
+      145,
+      90,
+      410,
+      600
+    ],
+    "expected": "创造的空洞",
+    "action": "Custom",
+    "post_delay": 500,
+    "next": [],
+    "custom_action": "nikki.ui_click"
+  },
   "MaaNikki_Weekly_Cancel": {
     "recognition": "TemplateMatch",
     "roi": [

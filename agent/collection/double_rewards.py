@@ -480,7 +480,7 @@ def _run_double_weekly(
     game = Gameplay(rt)
     done_runs = 0
     completed_targets: list[str] = []
-    finished_now, total_now = weekly_cal_count if weekly_cal_count is not None else (0, 2)
+    finished_now, total_now = weekly_cal_count if weekly_cal_count is not None else (0, len(WEEKLY_TARGETS))
     for node, label in targets:
         if rt.stopped or done_runs >= quota:
             break

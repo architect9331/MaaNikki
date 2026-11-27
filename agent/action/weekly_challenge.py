@@ -11,7 +11,11 @@ from daily.runtime import Executors
 from daily.gameplay import Gameplay
 from daily.settings import ROOT
 
-TARGETS = (("MaaNikki_Weekly_Level_Qiggeda", "奇格格达"), ("MaaNikki_Weekly_Level_Juan", "卷卷"))
+TARGETS = (
+    ("MaaNikki_Weekly_Level_Qiggeda", "奇格格达"),
+    ("MaaNikki_Weekly_Level_Juan", "卷卷"),
+    ("MaaNikki_Weekly_Level_Void", "创造的空洞"),
+)
 
 
 def _record_weekly_state(rt, finished: int, total: int, completed_targets: list[str] | None = None):

@@ -785,14 +785,24 @@
                             "enabled": true
                         }
                     }
+                },
+                {
+                    "name": "Void",
+                    "label": "创造的空洞",
+                    "pipeline_override": {
+                        "MaaNikki_Weekly_Level_Void": {
+                            "enabled": true
+                        }
+                    }
                 }
             ],
             "default_case": [
                 "Qiggeda",
-                "Juan"
+                "Juan",
+                "Void"
             ],
             "min_count": 1,
-            "max_count": 2
+            "max_count": 3
         },
         "RealmQueue": {
             "type": "input",
@@ -1009,6 +1019,17 @@
                         "MaaNikki_Double_Option": {
                             "custom_action_param": {
                                 "weekly_priority": "Juan"
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Void",
+                    "label": "优先创造的空洞",
+                    "pipeline_override": {
+                        "MaaNikki_Double_Option": {
+                            "custom_action_param": {
+                                "weekly_priority": "Void"
                             }
                         }
                     }

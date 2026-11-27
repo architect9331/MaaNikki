@@ -25,7 +25,11 @@ export type PlanGoal = Exclude<RealmGoal, 'weekly'>;
 export interface RealmQueueEntry { goal: RealmGoal; enabled: boolean }
 export const REALM_GOALS: RealmGoal[] = ['weekly', 'renewal', 'crafting', 'glow'];
 export const REALM_GOAL_LABELS: Record<RealmGoal, string> = { weekly: '每周幻境', renewal: '焕新材料', crafting: '制衣材料', glow: '五星闪光' };
-export const WEEKLY_TARGETS = [{ id: 'Qiggeda', label: '奇格格达' }, { id: 'Juan', label: '卷卷' }] as const;
+export const WEEKLY_TARGETS = [
+  { id: 'Qiggeda', label: '奇格格达' },
+  { id: 'Juan', label: '卷卷' },
+  { id: 'Void', label: '创造的空洞' },
+] as const;
 
 const hasWeeklyToken = (raw: string | undefined) =>
   String(raw ?? '').split(',').some((token) => token.trim().replace(/^-/, '') === 'weekly');
@@ -85,10 +89,12 @@ export const doubleBlessMode = (values?: Record<string, OptionValue>): 'GlowPurs
     ? 'InheritFallback'
     : 'GlowPursuit';
 
-export const doubleWeeklyPriority = (values?: Record<string, OptionValue>): 'Qiggeda' | 'Juan' =>
+export const doubleWeeklyPriority = (values?: Record<string, OptionValue>): 'Qiggeda' | 'Juan' | 'Void' =>
   values?.DoubleWeeklyPriority?.type === 'select' && values.DoubleWeeklyPriority.caseName === 'Juan'
     ? 'Juan'
-    : 'Qiggeda';
+    : values?.DoubleWeeklyPriority?.type === 'select' && values.DoubleWeeklyPriority.caseName === 'Void'
+      ? 'Void'
+      : 'Qiggeda';
 
 export const monsterTargetMode = (values?: Record<string, OptionValue>): 'FollowDeficit' | 'InheritFallback' =>
   values?.MonsterTargetMode?.type === 'select' && values.MonsterTargetMode.caseName === 'InheritFallback'

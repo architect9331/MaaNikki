@@ -206,11 +206,12 @@ export function computeWeeklyEstimate(
 ): WeeklyEstimate {
   const selectedTargets = weeklyTargets(optionValues);
   const selectedCount = selectedTargets.length;
-  const perWeekEnergy = selectedCount * WEEKLY_ENERGY_PER_RUN;
   const obs = account?.observations?.weekly_realm;
   const weekKey = currentWeekKey();
   const isCurrentWeek = Boolean(obs && obs.period === weekKey && typeof obs.total === 'number');
-  const totalWeeklyCap = isCurrentWeek ? Math.max(1, Number(obs?.total ?? 2)) : 2;
+  const totalWeeklyCap = isCurrentWeek ? Math.max(1, Number(obs?.total ?? 3)) : Math.max(selectedCount, 3);
+  const perWeekRuns = Math.min(selectedCount, totalWeeklyCap);
+  const perWeekEnergy = perWeekRuns * WEEKLY_ENERGY_PER_RUN;
   const finishedThisWeek = isCurrentWeek ? Math.max(0, Number(obs?.finished ?? 0)) : 0;
 
   let remainingRunsThisWeek: number;
@@ -236,7 +237,7 @@ export function computeWeeklyEstimate(
     selectedTargets,
     selectedCount,
     perWeekEnergy,
-    perWeekRuns: Math.min(selectedCount, totalWeeklyCap),
+    perWeekRuns,
     thisWeekKnown: isCurrentWeek,
     finishedThisWeek,
     totalWeeklyCap,
