@@ -1,8 +1,6 @@
 """Shared shop entry, diagnostics, and weekly free gift claims."""
 from __future__ import annotations
 
-import cv2
-
 from .settings import ROOT
 from account_state import AccountState, period_key
 
@@ -54,20 +52,23 @@ class WeeklyShop(ShopWorkflow):
     TASK = "weekly_free_gifts"
     ENTRY = "MaaNikki_WeeklyFreeGifts"
     LABEL = "每周免费礼包"
-    LIST_ROI = [285, 60, 930, 625]
-    SCROLL_ROI = [300, 70, 910, 610]
+    SIDEBAR_ROI = [4, 85, 126, 595]
+    SIDEBAR_SCROLL_ROI = [15, 120, 100, 520]
+    LIST_ROI = [140, 85, 1085, 605]
+    SCROLL_ROI = [145, 95, 1075, 585]
     # Keep wheel events well inside the scrollable grid so the bottom-right
-    # return-to-top floating button (~[1159..1236, 583..652]) never swallows them.
-    SCROLL_INPUT_ROI = [300, 120, 720, 400]
+    # return-to-top floating button never swallows them and the narrow left rail stays clear.
+    SCROLL_INPUT_ROI = [300, 150, 720, 400]
     GIFTS = {"虹迹赠礼", "芳馨赠礼", "星实置业之礼"}
+    GIFT_PATTERN = "虹迹赠礼|芳馨赠礼|星实置业之礼"
 
     def open(self):
         ready = "MaaNikki_Shop_GiftsReady"
         if self.ui.page_matches(ready) and self.ui.wait_page(ready):
             return True
         return self.open_shop() and self.ui.find(
-            roi=[20, 100, 220, 575], node="MaaNikki_Shop_GiftsTab",
-            scroll_roi=[20, 110, 215, 560])
+            roi=self.SIDEBAR_ROI, node="MaaNikki_Shop_GiftsTab",
+            scroll_roi=self.SIDEBAR_SCROLL_ROI)
 
     def list_top(self):
         x, y, w, h = self.SCROLL_ROI
@@ -83,8 +84,19 @@ class WeeklyShop(ShopWorkflow):
             image = following
         return None
 
-    def claim(self, name, box):
-        if not self.ui.enter_page(lambda: self.ui.click_box(box),
+    def _is_card_sold_out(self, title_box, image):
+        if image is None:
+            return False
+        sold_out = self.rt.recognize("MaaNikki_Shop_SoldOut", {
+            "roi": self.status_roi(title_box)}, image=image)
+        if sold_out and sold_out.hit:
+            return True
+        # Also recognize 剩余限购 0/1 or 本周限购 0/1 in the top badge of the card.
+        return bool(self.rt.text(self.limit_roi(title_box), r"(?:剩余|本周)限购\s*[0０]\s*[/／]", image=image))
+
+    def claim(self, name, title_box):
+        click_target = self.card_click_box(title_box)
+        if not self.ui.enter_page(lambda: self.ui.click_box(click_target),
                 "MaaNikki_Shop_DetailReady", source="MaaNikki_Shop_GiftsReady", attempts=2):
             return self.fail(f"未能打开{name}详情")
         # All price checks and the confirm box must refer to the same fresh
@@ -107,18 +119,49 @@ class WeeklyShop(ShopWorkflow):
         # A reward layer is the receipt; the sold-out card confirms this week's
         # quota was consumed before moving on to a different gift.
         image = self.rt.capture()
-        sold_out = (self.rt.recognize("MaaNikki_Shop_SoldOut", {
-            "roi": self.status_roi(box)}, image=image) if image is not None else None)
-        if not sold_out or not sold_out.hit:
+        if image is None:
+            return self.fail(f"{name}领取后未确认已售罄")
+        refreshed = self.rt.recognize("MaaNikki_Daily_OCR", {
+            "roi": self.LIST_ROI, "expected": f"^{name}$"}, image=image)
+        check_box = list(refreshed.box) if (refreshed and refreshed.hit and refreshed.box) else title_box
+        if not self._is_card_sold_out(check_box, image):
             return self.fail(f"{name}领取后未确认已售罄")
         self.confirm(name, "claimed")
         self.rt.log(f"每周免费礼包：已领取{name}。")
         return True
 
     @staticmethod
-    def status_roi(box):
-        x, y, w, _ = box
-        return [max(285, round(x+w/2)-60), max(60, y-115), 120, 65]
+    def card_click_box(title_box):
+        x, y, w, h = title_box
+        return [max(140, x), max(95, y - 55), max(w, 72), h + 55]
+
+    @staticmethod
+    def status_roi(title_box):
+        x, y, w, _ = title_box
+        return [max(140, round(x + w / 2) - 70), max(85, y - 125), 140, 95]
+
+    @staticmethod
+    def limit_roi(title_box):
+        x, y, w, _ = title_box
+        return [max(140, round(x + w / 2) - 85), max(85, y - 155), 170, 52]
+
+    def _find_gift_titles(self, image):
+        """Find target weekly free gift titles directly via OCR, independent of price-bar art."""
+        result = self.rt.recognize("MaaNikki_Daily_OCR", {
+            "roi": self.LIST_ROI, "expected": self.GIFT_PATTERN}, image=image)
+        if not result or not result.hit:
+            return []
+        items = list(getattr(result, "filtered_results", None) or [])
+        if not items and getattr(result, "best_result", None) is not None:
+            items = [result.best_result]
+        found = []
+        for item in items:
+            text = "".join(str(getattr(item, "text", "") or "").split())
+            box = list(getattr(item, "box", ()) or ())
+            if text in self.GIFTS and len(box) == 4:
+                found.append((text, box))
+        found.sort(key=lambda pair: (pair[1][1], pair[1][0]))
+        return found
 
     def scan(self):
         image = self.list_top()
@@ -129,24 +172,16 @@ class WeeklyShop(ShopWorkflow):
         for _ in range(60):
             if self.rt.stopped:
                 return False
-            # Free labels on dimmed sold-out cards can correlate below .85.
-            # This only discovers candidates: exact names and sold-out status,
-            # or the detail page's free/zero-total checks, still confirm them.
-            boxes = self.ui.asset_boxes("ButtonShopFree", image=image, roi=self.LIST_ROI,
-                                        threshold=.75, count=10, method=cv2.TM_CCOEFF_NORMED)
-            self.rt.evidence.observe("shop.gift_candidates", boxes=boxes)
+            matches = self._find_gift_titles(image)
+            self.rt.evidence.observe("shop.gift_candidates", boxes=[box for _, box in matches])
             claimed = False
-            for box in sorted(boxes, key=lambda item: (item[1], item[0])):
-                bx, by, bw, _ = box
-                if by < 100:
-                    continue  # The title of this partially clipped card is not visible.
-                title_roi = [max(285, round(bx+bw/2)-82), by-42, 164, 36]
-                name = "".join(self.rt.text(title_roi, ".+", image=image).split())
-                if name not in self.GIFTS or name in self.completed:
+            for name, box in matches:
+                if name in self.completed:
                     continue
-                sold_out = self.rt.recognize("MaaNikki_Shop_SoldOut", {
-                    "roi": self.status_roi(box)}, image=image)
-                if sold_out and sold_out.hit:
+                _bx, by, _bw, _bh = box
+                if by < 145 or by > 670:
+                    continue  # Wait until the card's status badge and price bar are cleanly visible.
+                if self._is_card_sold_out(box, image):
                     self.confirm(name, "sold_out")
                     self.rt.log(f"每周免费礼包：{name}本周已领取，跳过。", detail=True)
                 else:

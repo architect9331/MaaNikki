@@ -9,7 +9,7 @@
   },
   "MaaNikki_Shop_ResonanceTab": {
     "recognition": "OCR",
-    "roi": [20, 100, 220, 575],
+    "roi": [4, 85, 126, 595],
     "expected": "^共鸣商店$",
     "action": "Custom",
     "custom_action": "nikki.ui_click",
@@ -20,16 +20,27 @@
     "post_delay": 0,
     "next": []
   },
-  "MaaNikki_Shop_ResonanceReady": {
+  "MaaNikki_Shop_ResonanceSubTabs": {
     "recognition": "OCR",
-    "roi": [260, 58, 480, 53],
+    "roi": [135, 85, 145, 195],
     "expected": "静谧水滴兑换|澎湃浪花兑换",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_ResonanceReady": {
+    "recognition": "And",
+    "all_of": ["MaaNikki_Shop_PageReady", "MaaNikki_Shop_ResonanceSubTabs"],
+    "action": "DoNothing"
+  },
+  "MaaNikki_Shop_SurgeTab": {
+    "recognition": "OCR",
+    "roi": [135, 85, 145, 195],
+    "expected": "^澎湃浪花兑换$",
     "action": "DoNothing"
   },
   "MaaNikki_Shop_QuietTab": {
     "recognition": "OCR",
-    "roi": [495, 58, 245, 53],
-    "expected": "^[★☆]?\\s*静谧水滴兑换\\s*[★☆]?$",
+    "roi": [135, 85, 145, 195],
+    "expected": "^静谧水滴兑换$",
     "action": "Custom",
     "custom_action": "nikki.ui_click",
     "custom_action_param": {
@@ -39,36 +50,21 @@
     "post_delay": 0,
     "next": []
   },
-  "MaaNikki_Shop_QuietSelected": {
-    "recognition": "And",
-    "all_of": ["MaaNikki_Shop_QuietTab", "MaaNikki_Shop_QuietSelectedLeft", "MaaNikki_Shop_QuietSelectedRight"],
+  "MaaNikki_Shop_SurgeOnlyItems": {
+    "recognition": "OCR",
+    "roi": [280, 90, 965, 610],
+    "expected": "慢慢恢复花露|缓速花露|眩晕花露",
     "action": "DoNothing"
   },
-  "MaaNikki_Shop_QuietSelectedLeft": {
-    "recognition": "Custom",
-    "custom_recognition": "nikki.ui_template",
-    "custom_recognition_param": {
-      "roi": [500, 70, 35, 30],
-      "template": "game/shop/tab_selected_star.png",
-      "color": [[0, 0, 140], [180, 90, 255]],
-      "threshold": 0.88
-    },
-    "action": "DoNothing"
-  },
-  "MaaNikki_Shop_QuietSelectedRight": {
-    "recognition": "Custom",
-    "custom_recognition": "nikki.ui_template",
-    "custom_recognition_param": {
-      "roi": [700, 70, 35, 30],
-      "template": "game/shop/tab_selected_star_right.png",
-      "color": [[0, 0, 140], [180, 90, 255]],
-      "threshold": 0.88
-    },
+  "MaaNikki_Shop_QuietGridAnchor": {
+    "recognition": "OCR",
+    "roi": [280, 90, 965, 610],
+    "expected": "噗灵|纯真丝线|闪亮泡泡|万象星实|璨光棱镜|流辉棱镜|虹彩棱镜",
     "action": "DoNothing"
   },
   "MaaNikki_Shop_QuietReady": {
-    "recognition": "And",
-    "all_of": ["MaaNikki_Shop_PageReady", "MaaNikki_Shop_QuietSelected"],
+    "recognition": "Custom",
+    "custom_recognition": "nikki.shop_quiet_ready",
     "action": "DoNothing"
   },
   "MaaNikki_Shop_DetailHeader": {

@@ -9,14 +9,14 @@
   },
   "MaaNikki_Shop_PageReady": {
     "recognition": "OCR",
-    "roi": [65, 15, 80, 45],
+    "roi": [50, 12, 95, 48],
     "expected": "^商城$",
     "action": "DoNothing"
   },
   "MaaNikki_Shop_GiftsTab": {
-    "recognition": "Or",
-    "roi": [20, 100, 220, 575],
-    "any_of": ["MaaNikki_Shop_GiftsTabText", "MaaNikki_Shop_GiftsTabImage"],
+    "recognition": "OCR",
+    "roi": [4, 85, 126, 595],
+    "expected": "^甄\\s*选\\s*礼\\s*包$",
     "action": "Custom",
     "custom_action": "nikki.ui_click",
     "custom_action_param": {
@@ -28,33 +28,21 @@
   },
   "MaaNikki_Shop_GiftsTabText": {
     "recognition": "OCR",
-    "roi": [20, 100, 220, 575],
+    "roi": [4, 85, 126, 595],
     "expected": "^甄\\s*选\\s*礼\\s*包$",
-    "threshold": 0.8,
-    "action": "DoNothing"
-  },
-  "MaaNikki_Shop_GiftsTabImage": {
-    "recognition": "TemplateMatch",
-    "roi": [20, 100, 220, 575],
-    "template": "game/shop/gifts_tab.png",
-    "threshold": 0.85,
-    "action": "DoNothing"
-  },
-  "MaaNikki_Shop_GiftsSelected": {
-    "recognition": "TemplateMatch",
-    "roi": [0, 100, 255, 575],
-    "template": "game/shop/gifts_selected.png",
-    "threshold": 0.9,
     "action": "DoNothing"
   },
   "MaaNikki_Shop_GiftsReady": {
-    "recognition": "And",
-    "all_of": ["MaaNikki_Shop_PageReady", "MaaNikki_Shop_GiftsSelected"],
+    "recognition": "Custom",
+    "custom_recognition": "nikki.shop_tab_selected",
+    "custom_recognition_param": {
+      "tab_node": "MaaNikki_Shop_GiftsTabText"
+    },
     "action": "DoNothing"
   },
   "MaaNikki_Asset_buttonshopfree": {
     "recognition": "TemplateMatch",
-    "roi": [285, 60, 930, 625],
+    "roi": [140, 85, 1085, 605],
     "template": "game/shop/free.png",
     "threshold": 0.75,
     "method": 5,
@@ -90,7 +78,7 @@
   },
   "MaaNikki_Shop_SoldOut": {
     "recognition": "OCR",
-    "roi": [285, 60, 930, 625],
+    "roi": [140, 85, 1085, 605],
     "expected": "^已售罄$",
     "action": "DoNothing"
   }

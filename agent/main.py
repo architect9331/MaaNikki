@@ -35,6 +35,7 @@ from action import persistent_abilities as _persistent_abilities
 from action import close_game as _close_game
 from recognition import ui_template as _ui_template
 from recognition import crown as _crown
+from recognition import shop as _shop
 from tall_window import adopt_session_16_9_handoff, restore_session_16_9_windows
 from game_hud import close_all_huds
 

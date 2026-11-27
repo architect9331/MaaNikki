@@ -15,18 +15,35 @@ class MonthlyExchange(ShopWorkflow):
         "启示水晶": "MaaNikki_Shop_RevelationTitle",
         "共鸣水晶": "MaaNikki_Shop_ResonanceTitle",
     }
-    LIST_ROI = [285, 120, 930, 550]
+    SIDEBAR_ROI = [4, 85, 126, 595]
+    SIDEBAR_SCROLL_ROI = [15, 120, 100, 520]
+    LIST_ROI = [280, 90, 965, 610]
 
     def __init__(self, runtime):
         super().__init__(runtime)
         self.newly_exchanged: list[str] = []
 
     def open(self):
-        if not self.open_shop() or not self.ui.find(
-                roi=[20, 100, 220, 575], node="MaaNikki_Shop_ResonanceTab",
-                scroll_roi=[20, 110, 215, 560]):
-            return False
+        if self.ui.page_matches("MaaNikki_Shop_QuietReady") and self.ui.wait_page("MaaNikki_Shop_QuietReady"):
+            return True
+        if not self.ui.page_matches("MaaNikki_Shop_ResonanceReady"):
+            if not self.open_shop() or not self.ui.find(
+                    roi=self.SIDEBAR_ROI, node="MaaNikki_Shop_ResonanceTab",
+                    scroll_roi=self.SIDEBAR_SCROLL_ROI):
+                return False
+        if self.ui.page_matches("MaaNikki_Shop_QuietReady"):
+            return True
         return self.rt.click_template("MaaNikki_Shop_QuietTab")
+
+    @staticmethod
+    def _card_status_roi(box):
+        x, y, w, _ = box
+        return [max(280, round(x + w / 2) - 70), max(90, y - 120), 140, 95]
+
+    @staticmethod
+    def _card_limit_roi(box):
+        x, y, w, _ = box
+        return [max(280, round(x + w / 2) - 85), max(88, y - 150), 170, 52]
 
     def exchange(self, name, box):
         if not self.ui.enter_page(lambda: self.ui.click_box(box),
@@ -58,10 +75,11 @@ class MonthlyExchange(ShopWorkflow):
         title = self.rt.recognize("MaaNikki_Daily_OCR", {
             "roi": self.LIST_ROI, "expected": "^"+name+"$"}, image=image)
         if title and title.hit:
-            x, y, w, _ = title.box
+            tbox = list(title.box)
             sold = self.rt.recognize("MaaNikki_Shop_SoldOut", {
-                "roi": [max(285, round(x+w/2)-60), max(120, y-85), 120, 65]}, image=image)
-            if not sold or not sold.hit:
+                "roi": self._card_status_roi(tbox)}, image=image)
+            zero_limit = self.rt.text(self._card_limit_roi(tbox), r"本月限购\s*[0０]\s*[/／]\s*5", image=image)
+            if not ((sold and sold.hit) or zero_limit):
                 return self.fail(f"{name}已兑换部分数量，剩余额度尚未完成")
         self.confirm(name, "exchanged")
         self.newly_exchanged.append(name)
@@ -76,6 +94,10 @@ class MonthlyExchange(ShopWorkflow):
             image = self.rt.capture()
             if image is None:
                 return False
+            # Safety guard: confirm we are still on 静谧水滴兑换 before touching any crystal card.
+            quiet_ok = self.rt.recognize("MaaNikki_Shop_QuietReady", image=image)
+            if not quiet_ok or not quiet_ok.hit:
+                return self.fail("未能确认处于静谧水滴兑换页签")
             result = self.rt.recognize("MaaNikki_Daily_OCR", {
                 "roi": self.LIST_ROI, "expected": "^"+name+"$"}, image=image)
             if not result or not result.hit:
@@ -83,10 +105,13 @@ class MonthlyExchange(ShopWorkflow):
                 self.rt.log(f"{self.LABEL}：{name}本月已兑换，跳过。", detail=True)
                 continue
             box = list(result.box)
-            x, y, w, _ = box
+            limit_text = self.rt.text(self._card_limit_roi(box), r"本月限购.*", image=image)
+            if not limit_text:
+                return self.fail(f"未在{name}卡片顶部确认本月限购标识，为防误花澎湃浪花已停止")
             sold = self.rt.recognize("MaaNikki_Shop_SoldOut", {
-                "roi": [max(285, round(x+w/2)-60), max(120, y-85), 120, 65]}, image=image)
-            if sold and sold.hit:
+                "roi": self._card_status_roi(box)}, image=image)
+            if (sold and sold.hit) or self.rt.text(
+                    self._card_limit_roi(box), r"本月限购\s*[0０]\s*[/／]\s*5", image=image):
                 self.confirm(name, "sold_out")
                 self.rt.log(f"{self.LABEL}：{name}本月已兑换，跳过。", detail=True)
                 continue
