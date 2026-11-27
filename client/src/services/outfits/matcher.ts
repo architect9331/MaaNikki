@@ -40,6 +40,7 @@ const PART_SORT_ORDER: Record<string, number> = {
   '278': 24,
   '413': 25,
   '279': 26,
+  '287': 27,
   '281': 31,
   '282': 32,
   '283': 33,
@@ -65,6 +66,7 @@ const FALLBACK_PART_NAMES: Record<string, string> = {
   '277': '手套',
   '278': '手持物',
   '279': '肤绘',
+  '287': '幻形饰物',
   '281': '底妆',
   '282': '眉妆',
   '283': '睫毛',
@@ -134,6 +136,7 @@ function inferPartFromClothId(clothId: string): string {
   if (/^\d{10}$/.test(clothId)) {
     const mid = clothId.slice(4, 6);
     if (mid === '42') return '242';
+    if (mid === '89') return '287';
     const prefixed = `2${mid}`;
     if (FALLBACK_PART_NAMES[prefixed]) return prefixed;
   }
