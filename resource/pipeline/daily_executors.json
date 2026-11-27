@@ -177,29 +177,65 @@
       ]
     }
   },
-  "MaaNikki_Zhaoxi_DailyReady": {
-    "recognition": "TemplateMatch",
+  "MaaNikki_Daily_InspirationTitle": {
+    "recognition": "OCR",
     "roi": [
-      1140,
-      480,
-      140,
-      100
+      55,
+      10,
+      190,
+      50
     ],
-    "template": "game/daily/zhaoxi_feature.png",
-    "threshold": 0.68,
+    "expected": "^每日灵感$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_ZhaoxiTab": {
+    "recognition": "OCR",
+    "roi": [
+      460,
+      5,
+      190,
+      62
+    ],
+    "expected": "朝夕心愿",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_XinghaiTab": {
+    "recognition": "OCR",
+    "roi": [
+      625,
+      5,
+      190,
+      62
+    ],
+    "expected": "星海拾光",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Daily_RefreshHint": {
+    "recognition": "OCR",
+    "roi": [
+      1090,
+      60,
+      160,
+      42
+    ],
+    "expected": "每日4点刷新",
+    "action": "DoNothing"
+  },
+  "MaaNikki_Zhaoxi_DailyReady": {
+    "recognition": "Custom",
+    "custom_recognition": "nikki.daily_tab_ready",
+    "custom_recognition_param": {
+      "tab": "zhaoxi"
+    },
     "action": "DoNothing",
     "timeout": 4000
   },
   "MaaNikki_Xinghai_DailyReady": {
-    "recognition": "TemplateMatch",
-    "roi": [
-      115,
-      590,
-      115,
-      105
-    ],
-    "template": "game/daily/xinghai_feature.png",
-    "threshold": 0.68,
+    "recognition": "Custom",
+    "custom_recognition": "nikki.daily_tab_ready",
+    "custom_recognition_param": {
+      "tab": "xinghai"
+    },
     "action": "DoNothing",
     "timeout": 4000
   },

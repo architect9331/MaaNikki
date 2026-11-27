@@ -223,47 +223,92 @@ class DailyRun(Executors):
         return self.pause(1.5) and not self.stopped
 
     def score(self):
-        from daily.score import score_image
-        from daily.ui import fields
+        from daily.score import (
+            SCORE_COLUMN_ROI,
+            locate_score_pointer,
+            reward_track_unlit,
+            score_digit_roi,
+            score_image,
+        )
         node = f"MaaNikki_{self.prefix}_Score"
-        x, y, w, h = fields(self.context, node)["roi"]
+        ready = f"MaaNikki_{self.prefix}_DailyReady"
         previous = None
-        crop = None
+        last_image = None
+        last_roi = list(SCORE_COLUMN_ROI)
         for attempt in range(5):
             image = self.capture()
             if image is None:
                 return None
-            crop = image[y:y+h, x:x+w]
+            last_image = image
             value = None
-            for method, frame in (("glyphs", score_image(crop)), ("original", crop)):
-                if frame is None:
-                    continue
-                result = self.recognize(node, {"roi": [0, 0, frame.shape[1], frame.shape[0]],
-                                              "only_rec": True, "threshold": .8}, image=frame)
-                text = getattr(getattr(result, "best_result", None), "text", "").strip()
-                self.score_reads.append({"attempt": attempt+1, "method": method, "text": text,
-                                         "hit": bool(result and result.hit),
-                                         "raw": [getattr(item, "text", "") for item in
-                                                 (getattr(result, "all_results", None) or [])]})
-                if result and result.hit and re.fullmatch(r"0|[1-5]00", text):
-                    value = int(text)
-                    break
+            pointer = locate_score_pointer(image)
+            if pointer is not None:
+                dx, dy, dw, dh = score_digit_roi(pointer[1], image.shape[:2])
+                last_roi = [dx, dy, dw, dh]
+                crop = image[dy:dy + dh, dx:dx + dw]
+                for method, frame in (("pointer_glyphs", score_image(crop)), ("pointer_original", crop)):
+                    if frame is None:
+                        continue
+                    result = self.recognize(node, {"roi": [0, 0, frame.shape[1], frame.shape[0]],
+                                                   "only_rec": True, "threshold": .8}, image=frame)
+                    text = getattr(getattr(result, "best_result", None), "text", "").strip()
+                    self.score_reads.append({
+                        "attempt": attempt + 1, "method": method, "pointer": list(pointer),
+                        "roi": last_roi, "text": text, "hit": bool(result and result.hit),
+                        "raw": [getattr(item, "text", "") for item in
+                                (getattr(result, "all_results", None) or [])],
+                    })
+                    if result and result.hit and re.fullmatch(r"[1-5]00", text):
+                        value = int(text)
+                        break
+            if value is None:
+                col_roi = list(SCORE_COLUMN_ROI)
+                result = self.recognize(node, {"roi": col_roi, "only_rec": False, "threshold": .8}, image=image)
+                all_items = getattr(result, "all_results", None) or []
+                matches = sorted({
+                    int(getattr(item, "text", "").strip())
+                    for item in all_items
+                    if re.fullmatch(r"[1-5]00", getattr(item, "text", "").strip())
+                    and getattr(item, "score", 1.0) >= 0.8
+                })
+                best_text = getattr(getattr(result, "best_result", None), "text", "").strip()
+                self.score_reads.append({
+                    "attempt": attempt + 1, "method": "column_ocr", "pointer": list(pointer) if pointer else None,
+                    "roi": col_roi, "text": best_text, "hit": bool(result and result.hit),
+                    "matches": matches,
+                    "raw": [getattr(item, "text", "") for item in all_items],
+                })
+                if len(matches) == 1:
+                    value = matches[0]
+            if value is None and pointer is None:
+                # In v3.0 每日灵感, 0 points omits the `<score> ★` badge completely.
+                # Only conclude 0 when the target tab, right-side refresh header, and
+                # all 5 unlit milestone circles are confirmed on the same frame.
+                tab_ok = bool(getattr(self.recognize(ready, image=image), "hit", False))
+                hint_ok = bool(getattr(self.recognize("MaaNikki_Daily_RefreshHint", image=image), "hit", False))
+                unlit = reward_track_unlit(image)
+                self.score_reads.append({
+                    "attempt": attempt + 1, "method": "zero_track",
+                    "tab_ok": tab_ok, "hint_ok": hint_ok, "unlit": unlit,
+                })
+                if tab_ok and hint_ok and unlit:
+                    value = 0
             if value is not None and previous == value:
                 return value
             previous = value
             if attempt < 4 and not self.pause(.4):
                 break
-        if crop is not None:
+        if last_image is not None:
             if not self.stopped:
                 self.diagnostic("daily_score", "无法可靠读取日常积分", details={
-                    "mode": self.mode, "roi": [x, y, w, h], "reads": self.score_reads[-8:]})
+                    "mode": self.mode, "roi": last_roi, "reads": self.score_reads[-8:]})
             try:
                 directory = ROOT / "logs/daily"
                 directory.mkdir(parents=True, exist_ok=True)
                 name = f"{self.mode}-score-{datetime.now():%Y%m%d-%H%M%S-%f}.png"
                 from diagnostics import save_image
-                if save_image(directory / name, image, roi=[x, y, w, h]):
-                    self.score_reads.append({"failure_image": name, "roi": [x, y, w, h]})
+                if save_image(directory / name, last_image, roi=last_roi):
+                    self.score_reads.append({"failure_image": name, "roi": last_roi})
             except (OSError, cv2.error):
                 pass
         return None

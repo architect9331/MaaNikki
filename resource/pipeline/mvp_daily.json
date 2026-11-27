@@ -37,10 +37,10 @@
   "MaaNikki_Zhaoxi_Score": {
     "recognition": "OCR",
     "roi": [
-      1165,
-      549,
-      66,
-      20
+      1085,
+      140,
+      62,
+      350
     ],
     "only_rec": true,
     "expected": "^(0|[1-5]00)$",
@@ -87,10 +87,10 @@
   "MaaNikki_Xinghai_Score": {
     "recognition": "OCR",
     "roi": [
-      1178,
-      537,
-      40,
-      20
+      1085,
+      140,
+      62,
+      350
     ],
     "only_rec": true,
     "expected": "^(0|[1-5]00)$",
