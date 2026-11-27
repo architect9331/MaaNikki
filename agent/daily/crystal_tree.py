@@ -21,9 +21,22 @@ class CrystalTree(Starsea):
     COUNTERS = (("stored", "存储量", 120, [110, 650, 300, 48]),
                 ("ready", "待收获量", 40, [430, 650, 310, 48]))
     TITLE_ROI = [100, 520, 350, 48]
+    SIDEBAR_RECOVERY_ROI = [1030, 185, 220, 42]
 
     def panel_visible(self, frame=None):
         return "星忆晶树" in self.rt.text(self.TITLE_ROI, image=frame).replace(" ", "")
+
+    def is_recovering_without_counters(self, frame=None):
+        if frame is None or not self.panel_visible(frame):
+            return False
+        sidebar = self.rt.text(self.SIDEBAR_RECOVERY_ROI, image=frame).replace(" ", "")
+        if "星忆晶树寻回中" not in sidebar:
+            return False
+        for _key, caption, _capacity, roi in self.COUNTERS:
+            raw = re.sub(r"\s+", "", self.rt.text(roi, image=frame)).replace("／", "/")
+            if caption in raw or re.search(r"\d+/\d+", raw):
+                return False
+        return True
 
     def read_panel(self):
         frame = self.rt.frame()
@@ -103,6 +116,14 @@ class CrystalTree(Starsea):
             return state is not None
 
         if not self.rt.ui.wait_page(ready, seconds=8):
+            frame = self.rt.frame()
+            if self.is_recovering_without_counters(frame):
+                self.events.append({"type": "tree_recovering_no_counters"})
+                self.rt.log("星忆晶树当前处于「寻回中」且未显示可收取计数，本次跳过。")
+                if not self.rt.main():
+                    raise NavigationError("星忆晶树详情未能关闭，未继续移动。")
+                teleporter.locator.reset()
+                return {"stored": 0, "ready": 0}
             raise NavigationError("无法读取星忆晶树存储量和待收获量，本次停止。")
         self.events.append({"type": "tree_counts", **state})
         self.rt.log(f"星忆晶树：存储 {state['stored']}/120，待收获 {state['ready']}/40。")
