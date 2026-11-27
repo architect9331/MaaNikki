@@ -60,8 +60,8 @@
     },
     {
       "path": "resource/model/wardrobe/parts.json",
-      "size": 2892,
-      "sha256": "107679c0709da338fede5f161f02da824de2c2fb9d8dbd89463c438977d19da0",
+      "size": 2740,
+      "sha256": "8bdf7f71f9d2249e71d5621fbbf3a605fdbdee7948b55a939d0d5667b4e9932d",
       "source": "MaaNikki wardrobe catalog metadata, 2026-11-02, update 3017"
     },
     {
@@ -96,8 +96,8 @@
     },
     {
       "path": "resource/model/rejuvenate/categories.json",
-      "size": 3281,
-      "sha256": "49fafadbb174476cb3ff7fd9570a6fa1875b78f9865264d5284a1e551a88de86",
+      "size": 3131,
+      "sha256": "964791db10feb51c1f167f8c52d34644dde2c796b75f48b9ac6e3ef84c06027f",
       "source": "MaaNikki Clothing Glow-Up rail categories, update 3017"
     },
     {
