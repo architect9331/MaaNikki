@@ -59,6 +59,27 @@ REGIONS = {
     ),
 }
 
+# Known game regions whose map tiles / PearPal coordinates are not yet bundled.
+# Recognizing them prevents false fallback matching against Miraland/Wanxiang.
+UNSUPPORTED_REGIONS = {
+    "cicia": (
+        "西西亚", "西西亚城", "茜尔梅斯", "浊息之沼",
+        "珀索德菈湾", "瓦芙洛尔村", "白日梦艺术之家", "女王十字中央车站",
+        "西西亚艺术学院", "瑟薇兰庭园", "柯尔蒂河", "勒芙莱艺术博物馆",
+        "复调环岛", "艾图瓦勒街区", "银岸沙滩", "瑟希莉尔广场", "乐佳朵街区",
+        "佩黎赫步行街", "爱可拉音乐厅", "蒙克莱坡地", "萨凡特广场", "瑰庭南岸",
+        "丽维埃拉街", "里耶颂大桥", "阿蕾格斯岛", "右岸蓝调街区", "蒂多尼村",
+        "迷岸雾林", "浊息之沼观测站", "浊息之沼晶石矿洞", "迷失之冠", "晦水浅泽",
+        "表达之冠", "创想之地", "神思博艺馆", "颂歌圣厅废墟", "旧轨安睡地",
+        "原质炼金工坊", "溯生炼金院", "露珀之家", "创造之冠", "淬心试炼台",
+        "美学之树", "澄净之冠", "生机温室", "静祷麦丘", "拾星滩", "瓦蕾尔大酒店",
+        "启思广场", "甘露苗圃", "圣律之冠", "坠星之地", "残光之冠", "灰幕庄园",
+    ),
+}
+UNSUPPORTED_REGION_LABELS = {
+    "cicia": "西西亚",
+}
+
 # Settled maximum zoom measured from captured map terrain. Miraland's opening
 # animation passes through the navigation scale (.47775) before enlarging a
 # further 1.0827x; that transient scale cannot track the final map viewport.
@@ -261,6 +282,10 @@ class MapMask:
             selected = next((key for key, names in REGIONS.items()
                              if any(name in compact or (len(name) >= 4 and name[:3] in compact)
                                     for name in names)), None)
+            if not selected:
+                selected = next((key for key, names in UNSUPPORTED_REGIONS.items()
+                                 if any(name in compact or (len(name) >= 4 and name[:3] in compact)
+                                        for name in names)), None)
             if selected:
                 break
         signature = tuple(readings), selected
@@ -348,7 +373,10 @@ class MapMask:
                     if not self.data.login.is_file():
                         hint = "请在设置的通用页面登录美鸭梨"
                     elif mode == "bigmap":
-                        if map_id not in REGIONS:
+                        if map_id in UNSUPPORTED_REGIONS:
+                            label = UNSUPPORTED_REGION_LABELS.get(map_id, "当前")
+                            hint = f"地图标记：{label}区域暂未支持"
+                        elif map_id not in REGIONS:
                             hint = "地图标记：正在识别地图区域…"
                         else:
                             last_known_map = map_id
@@ -407,6 +435,10 @@ class MapMask:
                                 state_dirty = True
                                 points, hint = self._project(locator, *center, scale, (640, 360),
                                                              (0, 65, 1280, 650), None)
+                    elif map_id in UNSUPPORTED_REGIONS:
+                        pending = track_pos = last_minimap_render = last_minimap_patch = None
+                        failures = 0
+                        diagnostic = {"search": "unsupported_region", "map": map_id, "reliable": False}
                     else:
                         primary_map = (map_id if map_id in REGIONS else
                                        (last_known_map if last_known_map in REGIONS else "miraland"))

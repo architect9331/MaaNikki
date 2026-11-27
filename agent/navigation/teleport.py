@@ -161,7 +161,7 @@ class Teleporter:
             result = self.rt.recognize("MaaNikki_Daily_OCR", {"roi": list_roi, "expected": ".+"})
             entries = {normalized(getattr(item, "text", "")) for item in
                        (getattr(result, "filtered_results", None) or [])}
-            first = {"心愿原野": "纪念山地", "伊赞之土": "巨木之森"}.get(province)
+            first = {"心愿原野": "纪念山地", "伊赞之土": "巨木之森", "西西亚": "西西亚城"}.get(province)
             expanded = province in entries and (not first or first in entries)
             if not expanded:
                 if not self.rt.ui.find(roi=list_roi, text=province, exact=True,
@@ -522,8 +522,15 @@ class Teleporter:
             "纪念山地", "花愿镇", "微风绿野", "小石树田村", "石树田无人区",
             "祈愿树林", "巨木之森", "蜗牛城", "心愿原野", "伊赞之土",
         )
+        cicia_headers = (
+            "西西亚", "西西亚城", "茜尔梅斯", "浊息之沼",
+        )
         mismatch = False
-        if header in fixed_headers and fixed_headers[header] != spec_id:
+        if any(name in header for name in cicia_headers):
+            # 3.0 Cicia is not yet covered by any bundled navigation map image;
+            # treat it as a distinct map so relocalization triggers teleport recovery.
+            mismatch = True
+        elif header in fixed_headers and fixed_headers[header] != spec_id:
             mismatch = True
         elif "家园" in header and spec_id != "home":
             mismatch = True
