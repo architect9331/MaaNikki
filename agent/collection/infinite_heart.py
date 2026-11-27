@@ -44,12 +44,20 @@ SHARD_NAME_ROI = [1040, 72, 230, 52]
 HUD_CURRENCY_ROI = [995, 14, 275, 44]
 HUD_HOME_MANAGE_ROI = [760, 0, 520, 90]
 
-# Top-center shard tab click centers at 1280x720 (verified against live screenshots):
-# Left: 星海碎片 (ver 3), Middle: 心愿原野碎片 (ver 1), Right: 伊赞之土碎片 (ver 2)
-SHARD_TABS = (
-    (3, "星海碎片", [521, 38]),
-    (1, "心愿原野碎片", [640, 38]),
-    (2, "伊赞之土碎片", [759, 38]),
+# Known Infinite Heart regional shards (tab order & count vary as players unlock regions,
+# and 3.0 added a 5th top-bar tab plus 西西亚碎片 ver 4 — tabs are discovered dynamically).
+SHARD_NAMES: dict[int, str] = {
+    1: "心愿原野碎片",
+    2: "伊赞之土碎片",
+    3: "星海碎片",
+    4: "西西亚碎片",
+}
+FALLBACK_TAB_TARGETS = (
+    [400, 38],
+    [521, 38],
+    [640, 38],
+    [761, 38],
+    [882, 38],
 )
 # Bottom-left zoom controls at 1280x720 (verified against live screenshots)
 ZOOM_OUT_BTN = [88, 661]
@@ -57,8 +65,9 @@ ZOOM_MIN_TRACK = [128, 661]
 ZOOM_IN_BTN = [274, 661]
 CANVAS_CENTER = [640, 360]
 
-# Wishing 5 multi-level (Lv.0..10) styling nodes
+# Wishing & Cicia multi-level (Lv.0..10) styling nodes
 STYLING_MULTI_LEVEL_IDS = (1030101, 1030102, 1030103, 1030104, 1030105)
+CICIA_STYLING_MULTI_LEVEL_IDS = (4050101, 4050102, 4050103, 4050104, 4050105)
 
 
 @lru_cache(maxsize=1)
@@ -81,6 +90,42 @@ def _to_720_bgr(image_bgr: np.ndarray) -> np.ndarray:
 
 def _to_720_rgb(image_bgr: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(_to_720_bgr(image_bgr), cv2.COLOR_BGR2RGB)
+
+
+def detect_shard_tab_centers(image_bgr: np.ndarray) -> list[list[int]]:
+    """Dynamically locate clickable [x, y] centers for all top-bar shard tabs between Q and E.
+
+    Each shard tab icon spans >=26 px vertically and >=18 px horizontally in white pixels,
+    cleanly separating it from the compact Q/E keycap badges regardless of whether the
+    account has 2, 3, 4, 5, or more tabs unlocked.
+    """
+    img = _to_720_bgr(image_bgr)
+    strip = img[10:62, 260:1020]
+    white = (strip[:, :, 0] > 210) & (strip[:, :, 1] > 210) & (strip[:, :, 2] > 210)
+    xs = np.where(white.any(axis=0))[0]
+    if len(xs) == 0:
+        return []
+    groups: list[tuple[int, int]] = []
+    start = prev = int(xs[0])
+    for raw_x in xs[1:]:
+        x = int(raw_x)
+        if x - prev > 26:
+            groups.append((start, prev))
+            start = x
+        prev = x
+    groups.append((start, prev))
+
+    centers: list[list[int]] = []
+    for x0, x1 in groups:
+        sub = white[:, x0 : x1 + 1]
+        ys = np.where(sub.any(axis=1))[0]
+        if len(ys) == 0:
+            continue
+        h_span = int(ys[-1] - ys[0] + 1)
+        w_span = x1 - x0 + 1
+        if h_span >= 26 and w_span >= 18:
+            centers.append([260 + (x0 + x1) // 2, 38])
+    return centers
 
 
 def _unpack_art_mask(packed: np.ndarray) -> np.ndarray:
@@ -172,14 +217,22 @@ def decode_shard_image(image_bgr: np.ndarray, version_id: int, debug_out: Path |
     """Decode one shard's GLOBAL-view screenshot into per-node states & confidence scores."""
     catalog, rules, masks = load_heart_assets()
     vid_key = str(version_id)
-    shard_rules = rules["shards"][vid_key]
-    art_key = {1: "wish_art", 2: "loe_art", 3: "ss_art"}[version_id]
+    ver_nodes = {int(n["id"]): n for n in catalog["nodes"] if int(n["version_id"]) == version_id}
+    art_key = {1: "wish_art", 2: "loe_art", 3: "ss_art"}.get(version_id)
+    shard_rules = rules.get("shards", {}).get(vid_key)
+    if not art_key or not shard_rules or art_key not in masks:
+        # Shards without GLOBAL mural masks (e.g. 3.0 西西亚碎片) are decoded 100% by zoomed frames.
+        baseline = {nid: {"state": "ambiguous", "level": 0, "score": 0.0, "px": 0} for nid in ver_nodes}
+        return {
+            "version_id": version_id,
+            "nodes": {str(k): v for k, v in sorted(baseline.items())},
+            "stats": _shard_stats(baseline),
+        }
     art_mask = _unpack_art_mask(masks[art_key])
 
     rgb = _to_720_rgb(image_bgr)
     _, delta_lum = _local_delta_lum(rgb, art_mask)
 
-    ver_nodes = {int(n["id"]): n for n in catalog["nodes"] if int(n["version_id"]) == version_id}
     decoded: dict[int, dict] = {}
     debug_overlay = np.zeros((MODEL_H, MODEL_W, 4), dtype=np.uint8) if debug_out is not None else None
 
@@ -435,6 +488,7 @@ def sample_zoomed_nodes(
     r_outer = int(round(26 * (scale / ZOOM_SCALE_MEDIUM)))
     r_c3 = 3.5 * (scale / ZOOM_SCALE_MEDIUM)
     r_c5 = 5.5 * (scale / ZOOM_SCALE_MEDIUM)
+    r_c10 = 10.0 * (scale / ZOOM_SCALE_MEDIUM)
     r_bg0 = 15.0 * (scale / ZOOM_SCALE_MEDIUM)
     r_bg1 = 25.0 * (scale / ZOOM_SCALE_MEDIUM)
     r_rim0 = 4.0 * (scale / ZOOM_SCALE_MEDIUM)
@@ -454,6 +508,7 @@ def sample_zoomed_nodes(
 
         c3 = lum[dist <= r_c3]
         c5 = lum[dist <= r_c5]
+        core10 = patch[dist <= r_c10]
         bg = lum[(dist > r_bg0) & (dist <= r_bg1)]
         rim_px = patch[(dist > r_rim0) & (dist <= r_rim1)]
         if len(c3) == 0 or len(c5) == 0 or len(bg) == 0:
@@ -467,6 +522,7 @@ def sample_zoomed_nodes(
         d_c5 = c5_mean - bg_med
         d_p85 = c5_p85 - bg_med
         ring_rb = float((rim_px[:, 2] - rim_px[:, 0]).mean()) if len(rim_px) > 0 else 0.0
+        cyan_frac = float(((core10[:, 0] > 180.0) & (core10[:, 1] > 170.0)).mean()) if len(core10) > 0 else 0.0
         r_ell = float(np.sqrt(((x - 640.0) / 520.0) ** 2 + ((y - 360.0) / 275.0) ** 2))
 
         nid = int(meta["id"])
@@ -476,16 +532,33 @@ def sample_zoomed_nodes(
         score = 0.0
 
         if max_lv > 1:
-            # Wishing 5 multi-level styling nodes: maxed (Lv.10) is cool blue-white filled;
-            # 0..9 has warm golden rim (r_minus_b > -5) or dark locked center -> defer to Detail OCR.
-            if ring_rb < -12.0 and d_p85 >= 55.0 and c3_med >= 100.0:
+            # Multi-level (Lv.0..10) styling nodes: maxed (Lv.10) renders filled bright cool-cyan;
+            # 0..9 renders a warm golden rim or dark locked center -> defer to Detail OCR.
+            if version_id == 4:
+                is_maxed = cyan_frac >= 0.50 and c3_mean >= 158.0 and d_c5 >= 35.0
+            else:
+                is_maxed = ring_rb < -12.0 and d_p85 >= 55.0 and c3_med >= 100.0
+            if is_maxed:
                 state = "unlocked"
                 level = max_lv
-                score = min(1.0, d_p85 / 120.0)
+                score = min(1.0, cyan_frac if version_id == 4 else d_p85 / 120.0)
             else:
                 state = "needs_level_ocr"
                 level = None
-                score = round(ring_rb, 2)
+                score = round(cyan_frac if version_id == 4 else ring_rb, 2)
+        elif version_id == 4:
+            # Cicia (3.0): unlocked nodes have a filled bright cyan-blue core (cyan_frac ~0.90-0.95,
+            # c3_mean ~188-216, d_c5 ~61-90), cleanly separating them from unlockable gold-rimmed
+            # diamonds (bCurrent: cyan_frac ~0.21-0.27, c3_mean ~127-145, d_c5 <= 27) and dark
+            # locked nodes (cyan_frac <= 0.05).
+            if cyan_frac >= 0.50 and c3_mean >= 158.0 and d_c5 >= 35.0:
+                state = "unlocked"
+                level = 1
+                score = min(1.0, cyan_frac)
+            elif cyan_frac <= 0.35 or c3_mean <= 148.0 or d_c5 <= 30.0:
+                state = "locked"
+                level = 0
+                score = -min(1.0, max(0.0, 0.50 - cyan_frac) / 0.50)
         elif version_id == 2:
             # LOE: filled golden-white core (>=182) vs dark locked/unlockable core (<=105)
             if c3_mean >= 150.0 and c3_med >= 130.0:
@@ -637,7 +710,7 @@ class InfiniteHeartScanner:
         self.log_dir = log_dir
         self.summary: dict = {}
 
-    def _ocr_box(self, image, roi: list[int]) -> list[dict]:
+    def _ocr_box(self, image, roi: list[int], *, only_rec: bool = False) -> list[dict]:
         res = self.rt.context.run_recognition(
             "MaaNikki_InfiniteHeart_Ocr",
             image,
@@ -645,7 +718,7 @@ class InfiniteHeartScanner:
                 "MaaNikki_InfiniteHeart_Ocr": {
                     "recognition": "OCR",
                     "roi": roi,
-                    "only_rec": False,
+                    "only_rec": only_rec,
                     "action": "DoNothing",
                 }
             },
@@ -661,6 +734,18 @@ class InfiniteHeartScanner:
                 out.append({"text": str(text), "box": list(box) if box else [0, 0, 0, 0]})
         return out
 
+    def _read_hud_currencies(self, image) -> tuple[int | None, int | None]:
+        tok_cnt, bling_cnt = _parse_hud_currencies(self._ocr_box(image, HUD_CURRENCY_ROI))
+        if tok_cnt is None:
+            # Single-digit token counts (e.g. '1') beside the shard icon can be skipped by full-bar
+            # text detection; fall back to direct recognition on the token slot left of the divider.
+            slot = self._ocr_box(image, [1068, 18, 56, 26], only_rec=True)
+            joined = re.sub(r"[,，\s]", "", "".join(it["text"] for it in slot))
+            m = re.search(r"\d+", joined)
+            if m:
+                tok_cnt = int(m.group(0))
+        return tok_cnt, bling_cnt
+
     def _detect_shard_id(self, image) -> int | None:
         texts = self.rt.text(SHARD_NAME_ROI, image=image)
         if "心愿" in texts or "原野" in texts:
@@ -669,6 +754,8 @@ class InfiniteHeartScanner:
             return 2
         if "星海" in texts:
             return 3
+        if "西西亚" in texts:
+            return 4
         return None
 
     def _is_on_heart_page(self, image) -> bool:
@@ -751,30 +838,37 @@ class InfiniteHeartScanner:
             cv2.circle(vis, (entry["x"], entry["y"]), max(8, int(round(5 * scale))), color, 1)
         cv2.imwrite(str(self.log_dir / f"shard_{vid}_{tag}.png"), vis)
 
-    def _scan_wishing_styling_levels(self, zoomed_obs: list[dict[int, dict]]) -> dict[int, int]:
-        """Zoom from MEDIUM (2.385) to DETAIL (4.667) near top-left and OCR exact `lv/10` for the 5 styling nodes."""
+    def _scan_styling_levels(
+        self,
+        vid: int,
+        node_ids: tuple[int, ...],
+        zoomed_obs: list[dict[int, dict]],
+    ) -> dict[int, int]:
+        """Zoom from MEDIUM (2.385) to DETAIL (4.667) and OCR exact `lv/10` for multi-level styling nodes."""
         if not self._zoom_in_once():
             return {}
-        _, raw_x, raw_y = _node_scaled_coords(1, ZOOM_SCALE_DETAIL)
+        _, raw_x, raw_y = _node_scaled_coords(vid, ZOOM_SCALE_DETAIL)
         catalog, _, _ = load_heart_assets()
-        w_nodes = [n for n in catalog["nodes"] if int(n["version_id"]) == 1 and n.get("screen_pos")]
-        idx_by_id = {int(n["id"]): i for i, n in enumerate(w_nodes)}
-        style_raw = {nid: (float(raw_x[idx_by_id[nid]]), float(raw_y[idx_by_id[nid]])) for nid in STYLING_MULTI_LEVEL_IDS if nid in idx_by_id}
+        v_nodes = [n for n in catalog["nodes"] if int(n["version_id"]) == vid and n.get("screen_pos")]
+        idx_by_id = {int(n["id"]): i for i, n in enumerate(v_nodes)}
+        style_raw = {nid: (float(raw_x[idx_by_id[nid]]), float(raw_y[idx_by_id[nid]])) for nid in node_ids if nid in idx_by_id}
+        if not style_raw:
+            return {}
 
         frame = self.rt.capture()
         if frame is None:
             return {}
-        tx, ty, score, cnt = align_zoomed_frame(frame, 1, scale=ZOOM_SCALE_DETAIL)
+        tx, ty, score, cnt = align_zoomed_frame(frame, vid, scale=ZOOM_SCALE_DETAIL)
 
-        # Pan up to 2 times if the 5 styling nodes are not all cleanly inside the OCR viewport
-        for _ in range(2):
+        # Pan up to 3 times if the 5 styling nodes are not all cleanly inside the OCR viewport
+        for _ in range(3):
             pts = [(rx + tx, ry + ty) for rx, ry in style_raw.values()]
             if all(75 <= px <= 1205 and 90 <= py <= 585 for px, py in pts):
                 break
             cx = sum(p[0] for p in pts) / len(pts)
             cy = sum(p[1] for p in pts) / len(pts)
-            move_x = max(-420, min(420, int(round(420.0 - cx))))
-            move_y = max(-360, min(360, int(round(310.0 - cy))))
+            move_x = max(-420, min(420, int(round(640.0 - cx))))
+            move_y = max(-360, min(360, int(round(340.0 - cy))))
             if abs(move_x) < 25 and abs(move_y) < 25:
                 break
             if not self._drag_canvas(move_x, move_y):
@@ -782,7 +876,7 @@ class InfiniteHeartScanner:
             frame = self.rt.capture()
             if frame is None:
                 return {}
-            tx, ty, score, cnt = align_zoomed_frame(frame, 1, scale=ZOOM_SCALE_DETAIL)
+            tx, ty, score, cnt = align_zoomed_frame(frame, vid, scale=ZOOM_SCALE_DETAIL)
 
         if cnt < 3 or score < 60.0:
             return {}
@@ -807,7 +901,7 @@ class InfiniteHeartScanner:
                 cv2.rectangle(vis, (x - 42, y + 12), (x + 42, y + 56), (40, 210, 255), 1)
                 if nid in levels:
                     cv2.putText(vis, f"{levels[nid]}/10", (x - 24, y - 16), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (80, 240, 80), 2)
-            cv2.imwrite(str(self.log_dir / "shard_1_styling_ocr.png"), vis)
+            cv2.imwrite(str(self.log_dir / f"shard_{vid}_styling_ocr.png"), vis)
         return levels
 
     def _scan_shard_zoomed(self, vid: int, global_decoded: dict) -> dict:
@@ -837,7 +931,7 @@ class InfiniteHeartScanner:
                 for nid in STYLING_MULTI_LEVEL_IDS
             )
             if need_ocr:
-                styling_levels = self._scan_wishing_styling_levels(zoomed_obs)
+                styling_levels = self._scan_styling_levels(1, STYLING_MULTI_LEVEL_IDS, zoomed_obs)
 
         elif vid == 2:
             # LOE: Center -> Top clamp -> Bottom clamp -> Left-Center -> Right-Center (100% of 222 nodes in central zone)
@@ -869,6 +963,33 @@ class InfiniteHeartScanner:
             for _ in range(2):
                 self._drag_canvas(0, 400)
             self._capture_zoomed_stop(vid, ZOOM_SCALE_MEDIUM, zoomed_obs, "z1_tl")
+
+        elif vid == 4:
+            # Cicia (3.0): Center -> Top clamp -> Left-Center -> Bottom clamp -> Bottom-Right (100% of 111 nodes;
+            # ending at Bottom-Right puts all 5 multi-level styling nodes 4050101..4050105 in view for DETAIL OCR).
+            self._capture_zoomed_stop(vid, ZOOM_SCALE_MEDIUM, zoomed_obs, "z1_center")
+            for _ in range(2):
+                self._drag_canvas(0, 400)
+            self._capture_zoomed_stop(vid, ZOOM_SCALE_MEDIUM, zoomed_obs, "z1_top")
+            self._drag_canvas(0, -400)
+            self._drag_canvas(360, 0)
+            self._capture_zoomed_stop(vid, ZOOM_SCALE_MEDIUM, zoomed_obs, "z1_left")
+            for _ in range(2):
+                self._drag_canvas(0, -400)
+            self._drag_canvas(-360, 0)
+            self._capture_zoomed_stop(vid, ZOOM_SCALE_MEDIUM, zoomed_obs, "z1_bottom")
+            self._drag_canvas(-360, 0)
+            self._capture_zoomed_stop(vid, ZOOM_SCALE_MEDIUM, zoomed_obs, "z1_br")
+
+            need_ocr = any(
+                not any(
+                    obs.get(nid, {}).get("state") == "unlocked" and obs.get(nid, {}).get("level") == 10
+                    for obs in zoomed_obs
+                )
+                for nid in CICIA_STYLING_MULTI_LEVEL_IDS
+            )
+            if need_ocr:
+                styling_levels = self._scan_styling_levels(4, CICIA_STYLING_MULTI_LEVEL_IDS, zoomed_obs)
 
         return fuse_shard_observations(vid, global_decoded, zoomed_obs, styling_levels)
 
@@ -979,6 +1100,36 @@ class InfiniteHeartScanner:
         )
         return False
 
+    def _scan_active_shard(
+        self,
+        vid: int,
+        shards_result: dict[str, dict],
+        currencies: dict[str, int],
+    ) -> int | None:
+        shard_name = SHARD_NAMES[vid]
+        self.rt.log(f"正在读取「{shard_name}」解锁进度（全景 + 放大复核）...")
+        if not self._ensure_min_zoom():
+            raise TaskStopped()
+        frame = self.rt.capture()
+        if frame is None:
+            raise RuntimeError(f"未能截取「{shard_name}」画面。")
+        tok_cnt, bling_cnt = self._read_hud_currencies(frame)
+        if tok_cnt is not None:
+            currencies[str(vid)] = tok_cnt
+
+        dbg = (self.log_dir / f"shard_{vid}_global.png") if self.log_dir else None
+        global_decoded = decode_shard_image(frame, vid, debug_out=dbg)
+        decoded = self._scan_shard_zoomed(vid, global_decoded)
+        shards_result[str(vid)] = decoded
+        st = decoded["stats"]
+        self.rt.log(
+            f"「{shard_name}」识别完成：已解锁 {st['unlocked']} / {st['total']}"
+            + (f"，待确认 {st['ambiguous']}" if st["ambiguous"] else "")
+            + (f"，当前持有 {tok_cnt}" if tok_cnt is not None else "")
+            + "。"
+        )
+        return bling_cnt
+
     def run(self) -> bool:
         if self.rt.stopped:
             raise TaskStopped()
@@ -990,49 +1141,52 @@ class InfiniteHeartScanner:
         currencies: dict[str, int] = {}
         latest_bling: int | None = None
 
-        for vid, shard_name, tab_target in SHARD_TABS:
+        init_frame = self.rt.capture()
+        if init_frame is None:
+            raise RuntimeError("未能截取「无限之心」初始画面。")
+        tab_targets = detect_shard_tab_centers(init_frame)
+        if len(tab_targets) < 2:
+            tab_targets = [list(t) for t in FALLBACK_TAB_TARGETS]
+
+        # Scan whichever regional shard is already active before clicking across the top bar.
+        last_header = (self.rt.text(SHARD_NAME_ROI, image=init_frame) or "").strip()
+        cur = self._detect_shard_id(init_frame)
+        if cur in SHARD_NAMES:
+            bling = self._scan_active_shard(cur, shards_result, currencies)
+            if bling is not None:
+                latest_bling = bling
+
+        for tab_target in tab_targets:
             if self.rt.stopped:
                 raise TaskStopped()
-            frame = self.rt.capture()
-            cur = self._detect_shard_id(frame) if frame is not None else None
-            if cur != vid:
-                if not self.rt.action("Click", target=tab_target) or not self.rt.pause(0.6):
-                    raise TaskStopped()
-                for _ in range(6):
-                    if self.rt.stopped:
-                        raise TaskStopped()
-                    frame = self.rt.capture()
-                    cur = self._detect_shard_id(frame) if frame is not None else None
-                    if cur == vid:
-                        break
-                    self.rt.pause(0.3)
-                if cur != vid:
-                    self.rt.log(f"未检测到「{shard_name}」（可能尚未解锁该区域碎片），已跳过。")
-                    continue
-
-            self.rt.log(f"正在读取「{shard_name}」解锁进度（全景 + 放大复核）...")
-            if not self._ensure_min_zoom():
+            if len(shards_result) >= len(SHARD_NAMES):
+                break
+            if not self.rt.action("Click", target=tab_target) or not self.rt.pause(0.6):
                 raise TaskStopped()
-            frame = self.rt.capture()
+            frame = None
+            header = last_header
+            for _ in range(4):
+                if self.rt.stopped:
+                    raise TaskStopped()
+                frame = self.rt.capture()
+                if frame is None:
+                    break
+                header = (self.rt.text(SHARD_NAME_ROI, image=frame) or "").strip()
+                if header != last_header:
+                    break
+                self.rt.pause(0.25)
             if frame is None:
-                raise RuntimeError(f"未能截取「{shard_name}」画面。")
-            tok_cnt, bling_cnt = _parse_hud_currencies(self._ocr_box(frame, HUD_CURRENCY_ROI))
-            if tok_cnt is not None:
-                currencies[str(vid)] = tok_cnt
-            if bling_cnt is not None:
-                latest_bling = bling_cnt
-
-            dbg = (self.log_dir / f"shard_{vid}_global.png") if self.log_dir else None
-            global_decoded = decode_shard_image(frame, vid, debug_out=dbg)
-            decoded = self._scan_shard_zoomed(vid, global_decoded)
-            shards_result[str(vid)] = decoded
-            st = decoded["stats"]
-            self.rt.log(
-                f"「{shard_name}」识别完成：已解锁 {st['unlocked']} / {st['total']}"
-                + (f"，待确认 {st['ambiguous']}" if st["ambiguous"] else "")
-                + (f"，当前持有 {tok_cnt}" if tok_cnt is not None else "")
-                + "。"
-            )
+                continue
+            last_header = header
+            vid = self._detect_shard_id(frame)
+            if vid is None or vid not in SHARD_NAMES:
+                # Non-regional tab (such as Home ability tab in 3.0): skip cleanly.
+                continue
+            if str(vid) in shards_result:
+                continue
+            bling = self._scan_active_shard(vid, shards_result, currencies)
+            if bling is not None:
+                latest_bling = bling
 
         if not shards_result:
             raise RuntimeError("未能读取任何无限之心碎片。")
@@ -1045,7 +1199,7 @@ class InfiniteHeartScanner:
         scan_payload = {
             "schema_version": 1,
             "updated_at": now,
-            "complete": len(shards_result) == len(SHARD_TABS),
+            "complete": len(shards_result) == len(SHARD_NAMES),
             "scanned_shards": sorted(int(k) for k in shards_result),
             "currencies": currencies,
             "bling": latest_bling,

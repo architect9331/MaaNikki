@@ -530,7 +530,7 @@ export function InfiniteHeartPanel({ refreshToken }: { refreshToken: number }) {
           {totalAmbiguous > 0 && <span className="text-warning"> · {totalAmbiguous} 项待确认</span>}
           {scan.updated_at && <> · 更新于 {formatTime(scan.updated_at)}</>}
         </>
-      : '自动进入「无限之心」并将三个碎片缩放到最高视野，按游戏内节点渲染规则精确提取全部解锁进度与剩余奇想星需求。';
+      : '自动进入「无限之心」并将各区域碎片缩放到最高视野，按游戏内节点渲染规则精确提取全部解锁进度与剩余奇想星需求。';
 
   function renderNodeRow(node: ResolvedNode, depth = 0) {
     const { meta, state, level, ready, remainingTokens, remainingBling, chainTokens, manual } = node;
@@ -777,8 +777,8 @@ export function InfiniteHeartPanel({ refreshToken }: { refreshToken: number }) {
         </section>
       ) : (
         <>
-          {/* 3-Shard Switcher */}
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {/* Shard Switcher */}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {catalog.versions.map((v) => {
               const st = shardStats.get(v.id);
               const pct = st && st.total > 0 ? Math.round((st.unlocked / st.total) * 100) : 0;

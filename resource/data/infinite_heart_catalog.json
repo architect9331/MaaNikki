@@ -30,6 +30,16 @@
       "node_count": 222,
       "total_tokens": 479,
       "total_bling": 14069000
+    },
+    {
+      "id": 4,
+      "name": "西西亚碎片",
+      "tab_index": 3,
+      "token_name": "奇想星",
+      "token_id": 45,
+      "node_count": 111,
+      "total_tokens": 358,
+      "total_bling": 12510000
     }
   ],
   "nodes": [
@@ -11841,6 +11851,3390 @@
         633.4
       ],
       "heart_preset_id": 210005
+    },
+    {
+      "id": 4010101,
+      "version_id": 4,
+      "graph_id": 401,
+      "title": "“你的气息”",
+      "desc": "",
+      "category": "miracle_suit",
+      "category_label": "奇迹套装",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [
+        4010102
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        944.9,
+        585.4
+      ]
+    },
+    {
+      "id": 4010102,
+      "version_id": 4,
+      "graph_id": 401,
+      "title": "“眺望”",
+      "desc": "",
+      "category": "miracle_suit",
+      "category_label": "奇迹套装",
+      "is_root": false,
+      "predecessor_ids": [
+        4010101
+      ],
+      "successor_ids": [
+        4010103
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1005.1,
+        585.2
+      ]
+    },
+    {
+      "id": 4010103,
+      "version_id": 4,
+      "graph_id": 401,
+      "title": "“挽留”",
+      "desc": "",
+      "category": "miracle_suit",
+      "category_label": "奇迹套装",
+      "is_root": false,
+      "predecessor_ids": [
+        4010102
+      ],
+      "successor_ids": [
+        4010104
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        944.9,
+        648.7
+      ]
+    },
+    {
+      "id": 4010104,
+      "version_id": 4,
+      "graph_id": 401,
+      "title": "“我们的诗”",
+      "desc": "",
+      "category": "miracle_suit",
+      "category_label": "奇迹套装",
+      "is_root": false,
+      "predecessor_ids": [
+        4010103
+      ],
+      "successor_ids": [
+        4010105
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        886.2,
+        585.2
+      ]
+    },
+    {
+      "id": 4010105,
+      "version_id": 4,
+      "graph_id": 401,
+      "title": "“我的心”",
+      "desc": "",
+      "category": "miracle_suit",
+      "category_label": "奇迹套装",
+      "is_root": false,
+      "predecessor_ids": [
+        4010104
+      ],
+      "successor_ids": [
+        4010106
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        944.9,
+        529.2
+      ]
+    },
+    {
+      "id": 4010106,
+      "version_id": 4,
+      "graph_id": 401,
+      "title": "“再会”",
+      "desc": "",
+      "category": "miracle_suit",
+      "category_label": "奇迹套装",
+      "is_root": false,
+      "predecessor_ids": [
+        4010105
+      ],
+      "successor_ids": [
+        4010107
+      ],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 80000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        944.9,
+        492.1
+      ]
+    },
+    {
+      "id": 4010107,
+      "version_id": 4,
+      "graph_id": 401,
+      "title": "“停留”",
+      "desc": "",
+      "category": "miracle_suit",
+      "category_label": "奇迹套装",
+      "is_root": false,
+      "predecessor_ids": [
+        4010106
+      ],
+      "successor_ids": [
+        4010108
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 80000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1019.1,
+        549.2
+      ]
+    },
+    {
+      "id": 4010108,
+      "version_id": 4,
+      "graph_id": 401,
+      "title": "“瞬间”",
+      "desc": "",
+      "category": "miracle_suit",
+      "category_label": "奇迹套装",
+      "is_root": false,
+      "predecessor_ids": [
+        4010107
+      ],
+      "successor_ids": [
+        4010109
+      ],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1000.9,
+        653.6
+      ]
+    },
+    {
+      "id": 4010109,
+      "version_id": 4,
+      "graph_id": 401,
+      "title": "“万众的回声”",
+      "desc": "",
+      "category": "miracle_suit",
+      "category_label": "奇迹套装",
+      "is_root": false,
+      "predecessor_ids": [
+        4010108
+      ],
+      "successor_ids": [
+        4010110
+      ],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        870.4,
+        639.2
+      ]
+    },
+    {
+      "id": 4010110,
+      "version_id": 4,
+      "graph_id": 401,
+      "title": "致久候的你·妆",
+      "desc": "",
+      "category": "miracle_suit",
+      "category_label": "奇迹套装",
+      "is_root": false,
+      "predecessor_ids": [
+        4010109
+      ],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        886.0,
+        534.1
+      ]
+    },
+    {
+      "id": 4020101,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "铳",
+      "desc": "在西西亚城使用铳时，造成的伤害提升5%",
+      "category": "cicia_firearm",
+      "category_label": "铳战斗强化",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [
+        4020102
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 5000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        945.1,
+        369.6
+      ]
+    },
+    {
+      "id": 4020102,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "铳",
+      "desc": "在西西亚城使用铳时，造成的伤害提升5%",
+      "category": "cicia_firearm",
+      "category_label": "铳战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4020101
+      ],
+      "successor_ids": [
+        4020103
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 5000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        945.1,
+        305.8
+      ]
+    },
+    {
+      "id": 4020103,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "铳",
+      "desc": "在西西亚城使用铳时，造成的伤害提升5%",
+      "category": "cicia_firearm",
+      "category_label": "铳战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4020102
+      ],
+      "successor_ids": [
+        4020104
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 5000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        970.5,
+        292.9
+      ]
+    },
+    {
+      "id": 4020104,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "铳",
+      "desc": "在西西亚城使用铳时，造成的伤害提升5%",
+      "category": "cicia_firearm",
+      "category_label": "铳战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4020103
+      ],
+      "successor_ids": [
+        4020105
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        919.5,
+        292.9
+      ]
+    },
+    {
+      "id": 4020105,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "铳",
+      "desc": "在西西亚城使用铳时，造成的伤害提升5%",
+      "category": "cicia_firearm",
+      "category_label": "铳战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4020104
+      ],
+      "successor_ids": [],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        945.4,
+        246.4
+      ]
+    },
+    {
+      "id": 4020201,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "铳",
+      "desc": "在西西亚城使用铳时，造成的终结伤害提升10%",
+      "category": "cicia_firearm",
+      "category_label": "铳战斗强化",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [
+        4020202
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        923.5,
+        383.1
+      ]
+    },
+    {
+      "id": 4020202,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "铳",
+      "desc": "在西西亚城使用铳时，造成的终结伤害提升10%",
+      "category": "cicia_firearm",
+      "category_label": "铳战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4020201
+      ],
+      "successor_ids": [
+        4020203
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        894.5,
+        374.6
+      ]
+    },
+    {
+      "id": 4020203,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "铳",
+      "desc": "在西西亚城使用铳时，造成的终结伤害提升10%",
+      "category": "cicia_firearm",
+      "category_label": "铳战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4020202
+      ],
+      "successor_ids": [
+        4020204
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        894.5,
+        431.3
+      ]
+    },
+    {
+      "id": 4020204,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "铳",
+      "desc": "在西西亚城使用铳时，造成的终结伤害提升10%",
+      "category": "cicia_firearm",
+      "category_label": "铳战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4020203
+      ],
+      "successor_ids": [
+        4020205
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        871.4,
+        494.8
+      ]
+    },
+    {
+      "id": 4020205,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "铳",
+      "desc": "在西西亚城使用铳时，造成的终结伤害提升10%",
+      "category": "cicia_firearm",
+      "category_label": "铳战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4020204
+      ],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        871.4,
+        334.1
+      ]
+    },
+    {
+      "id": 4020301,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "铳",
+      "desc": "暖暖在西西亚城受到的伤害降低5%",
+      "category": "cicia_firearm",
+      "category_label": "铳战斗强化",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [
+        4020302
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        965.0,
+        383.1
+      ]
+    },
+    {
+      "id": 4020302,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "铳",
+      "desc": "暖暖在西西亚城受到的伤害降低5%",
+      "category": "cicia_firearm",
+      "category_label": "铳战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4020301
+      ],
+      "successor_ids": [
+        4020303
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        994.0,
+        374.6
+      ]
+    },
+    {
+      "id": 4020303,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "铳",
+      "desc": "暖暖在西西亚城受到的伤害降低5%",
+      "category": "cicia_firearm",
+      "category_label": "铳战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4020302
+      ],
+      "successor_ids": [
+        4020304
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        994.4,
+        431.3
+      ]
+    },
+    {
+      "id": 4020304,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "铳",
+      "desc": "暖暖在西西亚城受到的伤害降低5%",
+      "category": "cicia_firearm",
+      "category_label": "铳战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4020303
+      ],
+      "successor_ids": [
+        4020305
+      ],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1017.2,
+        494.8
+      ]
+    },
+    {
+      "id": 4020305,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "铳",
+      "desc": "暖暖在西西亚城受到的伤害降低5%",
+      "category": "cicia_firearm",
+      "category_label": "铳战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4020304
+      ],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1016.7,
+        334.1
+      ]
+    },
+    {
+      "id": 4020401,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "夜幕的另一面",
+      "desc": "可制作具有匿影能力的套装",
+      "category": "ability_suit",
+      "category_label": "能力套装",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [
+        4020402
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        849.3,
+        557.3
+      ]
+    },
+    {
+      "id": 4020402,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "匿影",
+      "desc": "匿影位移的最远距离提升",
+      "category": "cicia_stealth",
+      "category_label": "匿影能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4020401
+      ],
+      "successor_ids": [
+        4020403
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        744.0,
+        569.7
+      ]
+    },
+    {
+      "id": 4020403,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "匿影",
+      "desc": "匿影位移过程中获得无敌效果",
+      "category": "cicia_stealth",
+      "category_label": "匿影能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4020402
+      ],
+      "successor_ids": [
+        4020404
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        791.2,
+        495.4
+      ]
+    },
+    {
+      "id": 4020404,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "匿影",
+      "desc": "匿影位移速度提升",
+      "category": "cicia_stealth",
+      "category_label": "匿影能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4020403
+      ],
+      "successor_ids": [
+        4020405
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        791.2,
+        422.6
+      ]
+    },
+    {
+      "id": 4020405,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "匿影",
+      "desc": "匿影能量消耗速度减缓",
+      "category": "cicia_stealth",
+      "category_label": "匿影能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4020404
+      ],
+      "successor_ids": [
+        4020406,
+        4020501,
+        4020601
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        814.2,
+        342.4
+      ]
+    },
+    {
+      "id": 4020406,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "夜涡蝶影",
+      "desc": "",
+      "category": "clothing_sketch",
+      "category_label": "服装设计图",
+      "is_root": false,
+      "predecessor_ids": [
+        4020405
+      ],
+      "successor_ids": [
+        4020407
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        826.4,
+        383.4
+      ]
+    },
+    {
+      "id": 4020407,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "匿影",
+      "desc": "匿影附身时，晴浪彩球跳跃高度提升",
+      "category": "cicia_stealth",
+      "category_label": "匿影能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4020406
+      ],
+      "successor_ids": [],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        826.4,
+        436.1
+      ]
+    },
+    {
+      "id": 4020501,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "夜袭宣战",
+      "desc": "",
+      "category": "clothing_sketch",
+      "category_label": "服装设计图",
+      "is_root": false,
+      "predecessor_ids": [
+        4020405
+      ],
+      "successor_ids": [
+        4020502
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        852.7,
+        355.3
+      ]
+    },
+    {
+      "id": 4020502,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "匿影",
+      "desc": "匿影附身时，绒蝠声波持续时间提升",
+      "category": "cicia_stealth",
+      "category_label": "匿影能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4020501
+      ],
+      "successor_ids": [
+        4020503
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        852.7,
+        315.1
+      ]
+    },
+    {
+      "id": 4020503,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "匿影",
+      "desc": "匿影附身时，夜爵绒蝠冲刺过程中短暂获得无敌效果",
+      "category": "cicia_stealth",
+      "category_label": "匿影能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4020502
+      ],
+      "successor_ids": [],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        866.9,
+        216.0
+      ]
+    },
+    {
+      "id": 4020601,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "例外登场",
+      "desc": "",
+      "category": "clothing_sketch",
+      "category_label": "服装设计图",
+      "is_root": false,
+      "predecessor_ids": [
+        4020405
+      ],
+      "successor_ids": [
+        4020602
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        726.2,
+        394.9
+      ]
+    },
+    {
+      "id": 4020602,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "匿影",
+      "desc": "匿影附身时，旋木鼠轮冲刺距离提升",
+      "category": "cicia_stealth",
+      "category_label": "匿影能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4020601
+      ],
+      "successor_ids": [
+        4020603
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 30000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        702.8,
+        428.6
+      ]
+    },
+    {
+      "id": 4020603,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "匿影",
+      "desc": "匿影附身时，旋木鼠轮在地面上的跳跃高度提升",
+      "category": "cicia_stealth",
+      "category_label": "匿影能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4020602
+      ],
+      "successor_ids": [
+        4020604
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 30000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        673.1,
+        476.6
+      ]
+    },
+    {
+      "id": 4020604,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "匿影",
+      "desc": "匿影附身时，旋木鼠轮冲刺过程中短暂获得无敌效果",
+      "category": "cicia_stealth",
+      "category_label": "匿影能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4020603
+      ],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        657.6,
+        538.0
+      ]
+    },
+    {
+      "id": 4020701,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "激活搭配潜力",
+      "desc": "西西亚搭配展示中，发型属性+6%",
+      "category": "styling_buff",
+      "category_label": "搭配潜力加成",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [
+        4020702
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1071.8,
+        524.7
+      ]
+    },
+    {
+      "id": 4020702,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "繁丽荣光",
+      "desc": "",
+      "category": "clothing_sketch",
+      "category_label": "服装设计图",
+      "is_root": false,
+      "predecessor_ids": [
+        4020701
+      ],
+      "successor_ids": [
+        4020703
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1060.6,
+        413.1
+      ]
+    },
+    {
+      "id": 4020703,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "激活搭配潜力",
+      "desc": "西西亚搭配展示中，外套属性+6%",
+      "category": "styling_buff",
+      "category_label": "搭配潜力加成",
+      "is_root": false,
+      "predecessor_ids": [
+        4020702
+      ],
+      "successor_ids": [
+        4020704
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1060.6,
+        310.5
+      ]
+    },
+    {
+      "id": 4020704,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "激活搭配潜力",
+      "desc": "西西亚搭配展示中，连衣裙和上下装属性+6%",
+      "category": "styling_buff",
+      "category_label": "搭配潜力加成",
+      "is_root": false,
+      "predecessor_ids": [
+        4020703
+      ],
+      "successor_ids": [
+        4020705
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1115.9,
+        358.4
+      ]
+    },
+    {
+      "id": 4020705,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "咖啡香颂",
+      "desc": "",
+      "category": "clothing_sketch",
+      "category_label": "服装设计图",
+      "is_root": false,
+      "predecessor_ids": [
+        4020704
+      ],
+      "successor_ids": [
+        4020706
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 150000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1184.5,
+        440.0
+      ]
+    },
+    {
+      "id": 4020706,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "激活搭配潜力",
+      "desc": "西西亚搭配展示中，袜子属性+6%",
+      "category": "styling_buff",
+      "category_label": "搭配潜力加成",
+      "is_root": false,
+      "predecessor_ids": [
+        4020705
+      ],
+      "successor_ids": [
+        4020707
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 150000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1115.5,
+        469.3
+      ]
+    },
+    {
+      "id": 4020707,
+      "version_id": 4,
+      "graph_id": 402,
+      "title": "激活搭配潜力",
+      "desc": "西西亚搭配展示中，鞋子属性+6%",
+      "category": "styling_buff",
+      "category_label": "搭配潜力加成",
+      "is_root": false,
+      "predecessor_ids": [
+        4020706
+      ],
+      "successor_ids": [],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 150000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1115.5,
+        524.1
+      ]
+    },
+    {
+      "id": 4030101,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "炼金奇想录",
+      "desc": "可制作具有炼金能力的套装",
+      "category": "ability_suit",
+      "category_label": "能力套装",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [
+        4030102
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1040.1,
+        632.9
+      ]
+    },
+    {
+      "id": 4030102,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "秘药结晶",
+      "desc": "",
+      "category": "clothing_sketch",
+      "category_label": "服装设计图",
+      "is_root": false,
+      "predecessor_ids": [
+        4030101
+      ],
+      "successor_ids": [
+        4030103
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1054.1,
+        667.6
+      ]
+    },
+    {
+      "id": 4030103,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "炼金",
+      "desc": "可随时进行药剂的炼制与装备。",
+      "category": "cicia_alchemy",
+      "category_label": "炼金能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4030102
+      ],
+      "successor_ids": [
+        4030104,
+        4030201
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1051.8,
+        708.2
+      ]
+    },
+    {
+      "id": 4030104,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "炼金",
+      "desc": "较小概率增加炼制时药剂产量。",
+      "category": "cicia_alchemy",
+      "category_label": "炼金能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4030103
+      ],
+      "successor_ids": [
+        4030105
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1025.3,
+        757.4
+      ]
+    },
+    {
+      "id": 4030105,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "炼金",
+      "desc": "中等概率增加炼制时药剂产量。",
+      "category": "cicia_alchemy",
+      "category_label": "炼金能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4030104
+      ],
+      "successor_ids": [
+        4030106
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        977.1,
+        807.3
+      ]
+    },
+    {
+      "id": 4030106,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "秘原芳花",
+      "desc": "",
+      "category": "clothing_sketch",
+      "category_label": "服装设计图",
+      "is_root": false,
+      "predecessor_ids": [
+        4030105
+      ],
+      "successor_ids": [
+        4030107
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 30000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        921.4,
+        848.5
+      ]
+    },
+    {
+      "id": 4030107,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "炼金",
+      "desc": "小概率返还炼制药剂所需原料。",
+      "category": "cicia_alchemy",
+      "category_label": "炼金能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4030106
+      ],
+      "successor_ids": [
+        4030108
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 30000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        933.0,
+        901.8
+      ]
+    },
+    {
+      "id": 4030108,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "炼金",
+      "desc": "中概率返还炼制药剂所需原料。",
+      "category": "cicia_alchemy",
+      "category_label": "炼金能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4030107
+      ],
+      "successor_ids": [],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 30000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1000.5,
+        860.8
+      ]
+    },
+    {
+      "id": 4030201,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "炼金",
+      "desc": "可在随行药匣中装备更多种药剂。",
+      "category": "cicia_alchemy",
+      "category_label": "炼金能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4030103
+      ],
+      "successor_ids": [
+        4030202
+      ],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 30000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1105.8,
+        661.2
+      ]
+    },
+    {
+      "id": 4030202,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "炼金",
+      "desc": "可提升药剂的最大投掷距离。",
+      "category": "cicia_alchemy",
+      "category_label": "炼金能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4030201
+      ],
+      "successor_ids": [
+        4030203
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 30000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1161.2,
+        606.8
+      ]
+    },
+    {
+      "id": 4030203,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "捕梦安魂",
+      "desc": "",
+      "category": "clothing_sketch",
+      "category_label": "服装设计图",
+      "is_root": false,
+      "predecessor_ids": [
+        4030202
+      ],
+      "successor_ids": [
+        4030204
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 30000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1229.7,
+        608.2
+      ]
+    },
+    {
+      "id": 4030204,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "炼金",
+      "desc": "可解锁“微光渡桥”药剂的配方。",
+      "category": "cicia_alchemy",
+      "category_label": "炼金能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4030203
+      ],
+      "successor_ids": [
+        4030205
+      ],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1182.1,
+        665.3
+      ]
+    },
+    {
+      "id": 4030205,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "炼金",
+      "desc": "可提升“微光渡桥”药剂的效果，提升在渡桥上的移动速度。",
+      "category": "cicia_alchemy",
+      "category_label": "炼金能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4030204
+      ],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1114.7,
+        711.2
+      ]
+    },
+    {
+      "id": 4030301,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "法杖",
+      "desc": "在茜尔梅斯·浊息之沼、茜尔梅斯使用法杖时，造成的伤害提升5%",
+      "category": "cicia_wand",
+      "category_label": "法杖战斗强化",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [
+        4030302
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 5000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        935.3,
+        696.3
+      ]
+    },
+    {
+      "id": 4030302,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "法杖",
+      "desc": "在茜尔梅斯·浊息之沼、茜尔梅斯使用法杖时，造成的伤害提升5%",
+      "category": "cicia_wand",
+      "category_label": "法杖战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4030301
+      ],
+      "successor_ids": [
+        4030303
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 5000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        901.4,
+        687.1
+      ]
+    },
+    {
+      "id": 4030303,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "法杖",
+      "desc": "在茜尔梅斯·浊息之沼、茜尔梅斯使用法杖时，造成的伤害提升5%",
+      "category": "cicia_wand",
+      "category_label": "法杖战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4030302
+      ],
+      "successor_ids": [
+        4030304
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 5000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        870.9,
+        664.9
+      ]
+    },
+    {
+      "id": 4030304,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "法杖",
+      "desc": "在茜尔梅斯·浊息之沼、茜尔梅斯使用法杖时，造成的伤害提升5%",
+      "category": "cicia_wand",
+      "category_label": "法杖战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4030303
+      ],
+      "successor_ids": [
+        4030305
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        843.9,
+        687.1
+      ]
+    },
+    {
+      "id": 4030305,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "法杖",
+      "desc": "在茜尔梅斯·浊息之沼、茜尔梅斯使用法杖时，造成的伤害提升5%",
+      "category": "cicia_wand",
+      "category_label": "法杖战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4030304
+      ],
+      "successor_ids": [],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        825.0,
+        704.7
+      ]
+    },
+    {
+      "id": 4030401,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "法杖",
+      "desc": "在茜尔梅斯·浊息之沼、茜尔梅斯使用法杖时，造成的终结伤害提升10%",
+      "category": "cicia_wand",
+      "category_label": "法杖战斗强化",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [
+        4030402
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        944.6,
+        742.5
+      ]
+    },
+    {
+      "id": 4030402,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "法杖",
+      "desc": "在茜尔梅斯·浊息之沼、茜尔梅斯使用法杖时，造成的终结伤害提升10%",
+      "category": "cicia_wand",
+      "category_label": "法杖战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4030401
+      ],
+      "successor_ids": [
+        4030403
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        921.1,
+        775.4
+      ]
+    },
+    {
+      "id": 4030403,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "法杖",
+      "desc": "在茜尔梅斯·浊息之沼、茜尔梅斯使用法杖时，造成的终结伤害提升10%",
+      "category": "cicia_wand",
+      "category_label": "法杖战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4030402
+      ],
+      "successor_ids": [
+        4030404
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        858.8,
+        785.7
+      ]
+    },
+    {
+      "id": 4030404,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "法杖",
+      "desc": "在茜尔梅斯·浊息之沼、茜尔梅斯使用法杖时，造成的终结伤害提升10%",
+      "category": "cicia_wand",
+      "category_label": "法杖战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4030403
+      ],
+      "successor_ids": [
+        4030405
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        825.1,
+        769.5
+      ]
+    },
+    {
+      "id": 4030405,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "法杖",
+      "desc": "在茜尔梅斯·浊息之沼、茜尔梅斯使用法杖时，造成的终结伤害提升10%",
+      "category": "cicia_wand",
+      "category_label": "法杖战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4030404
+      ],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        761.5,
+        770.2
+      ]
+    },
+    {
+      "id": 4030501,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "法杖",
+      "desc": "暖暖在茜尔梅斯·浊息之沼、茜尔梅斯受到的伤害降低5%",
+      "category": "cicia_wand",
+      "category_label": "法杖战斗强化",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [
+        4030502
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        972.1,
+        689.6
+      ]
+    },
+    {
+      "id": 4030502,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "法杖",
+      "desc": "暖暖在茜尔梅斯·浊息之沼、茜尔梅斯受到的伤害降低5%",
+      "category": "cicia_wand",
+      "category_label": "法杖战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4030501
+      ],
+      "successor_ids": [
+        4030503
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        985.0,
+        742.5
+      ]
+    },
+    {
+      "id": 4030503,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "法杖",
+      "desc": "暖暖在茜尔梅斯·浊息之沼、茜尔梅斯受到的伤害降低5%",
+      "category": "cicia_wand",
+      "category_label": "法杖战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4030502
+      ],
+      "successor_ids": [
+        4030504
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        959.3,
+        789.3
+      ]
+    },
+    {
+      "id": 4030504,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "法杖",
+      "desc": "暖暖在茜尔梅斯·浊息之沼、茜尔梅斯受到的伤害降低5%",
+      "category": "cicia_wand",
+      "category_label": "法杖战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4030503
+      ],
+      "successor_ids": [
+        4030505
+      ],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        883.7,
+        842.4
+      ]
+    },
+    {
+      "id": 4030505,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "法杖",
+      "desc": "暖暖在茜尔梅斯·浊息之沼、茜尔梅斯受到的伤害降低5%",
+      "category": "cicia_wand",
+      "category_label": "法杖战斗强化",
+      "is_root": false,
+      "predecessor_ids": [
+        4030504
+      ],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        892.5,
+        914.0
+      ]
+    },
+    {
+      "id": 4030601,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "雾心渡船",
+      "desc": "提升划船速度",
+      "category": "region_special",
+      "category_label": "特色玩法与能力",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        736.8,
+        851.2
+      ]
+    },
+    {
+      "id": 4030602,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "雾心渡船",
+      "desc": "提升划船速度",
+      "category": "region_special",
+      "category_label": "特色玩法与能力",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        779.1,
+        884.2
+      ]
+    },
+    {
+      "id": 4030701,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "激活搭配潜力",
+      "desc": "西西亚搭配展示中，饰品属性+6%",
+      "category": "styling_buff",
+      "category_label": "搭配潜力加成",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [
+        4030702
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1016.7,
+        792.5
+      ]
+    },
+    {
+      "id": 4030702,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "垂露丹华",
+      "desc": "",
+      "category": "clothing_sketch",
+      "category_label": "服装设计图",
+      "is_root": false,
+      "predecessor_ids": [
+        4030701
+      ],
+      "successor_ids": [
+        4030703
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1034.9,
+        830.2
+      ]
+    },
+    {
+      "id": 4030703,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "激活搭配潜力",
+      "desc": "西西亚搭配展示中，所有服装属性+2%",
+      "category": "styling_buff",
+      "category_label": "搭配潜力加成",
+      "is_root": false,
+      "predecessor_ids": [
+        4030702
+      ],
+      "successor_ids": [
+        4030704
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1072.0,
+        841.7
+      ]
+    },
+    {
+      "id": 4030704,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "激活搭配潜力",
+      "desc": "西西亚搭配展示中，所有服装属性+2%",
+      "category": "styling_buff",
+      "category_label": "搭配潜力加成",
+      "is_root": false,
+      "predecessor_ids": [
+        4030703
+      ],
+      "successor_ids": [
+        4030705
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 150000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1101.1,
+        835.7
+      ]
+    },
+    {
+      "id": 4030705,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "水涟悦舞",
+      "desc": "",
+      "category": "clothing_sketch",
+      "category_label": "服装设计图",
+      "is_root": false,
+      "predecessor_ids": [
+        4030704
+      ],
+      "successor_ids": [
+        4030706
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 150000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1102.2,
+        793.1
+      ]
+    },
+    {
+      "id": 4030706,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "激活搭配潜力",
+      "desc": "西西亚搭配展示中，所有服装属性+2%",
+      "category": "styling_buff",
+      "category_label": "搭配潜力加成",
+      "is_root": false,
+      "predecessor_ids": [
+        4030705
+      ],
+      "successor_ids": [
+        4030707
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 150000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1118.0,
+        756.7
+      ]
+    },
+    {
+      "id": 4030707,
+      "version_id": 4,
+      "graph_id": 403,
+      "title": "激活搭配潜力",
+      "desc": "西西亚搭配展示中，所有服装属性+2%",
+      "category": "styling_buff",
+      "category_label": "搭配潜力加成",
+      "is_root": false,
+      "predecessor_ids": [
+        4030706
+      ],
+      "successor_ids": [],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 150000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1156.4,
+        745.2
+      ]
+    },
+    {
+      "id": 4040101,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "采集",
+      "desc": "采集西西亚城相关的高品质植物时，可获得精粹",
+      "category": "gathering_insight",
+      "category_label": "采集与生活感悟",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [
+        4040102
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [
+        "精准采集心得≥1000"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        835.1,
+        643.7
+      ]
+    },
+    {
+      "id": 4040102,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "采集",
+      "desc": "采集茜尔梅斯·浊息之沼、茜尔梅斯相关的高品质植物时，可获得精粹",
+      "category": "gathering_insight",
+      "category_label": "采集与生活感悟",
+      "is_root": false,
+      "predecessor_ids": [
+        4040101
+      ],
+      "successor_ids": [
+        4040103
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [
+        "精准采集心得≥3000"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        803.4,
+        658.3
+      ]
+    },
+    {
+      "id": 4040103,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "采集",
+      "desc": "采集西西亚城、茜尔梅斯·浊息之沼、茜尔梅斯相关的高品质植物时，可有概率双倍",
+      "category": "gathering_insight",
+      "category_label": "采集与生活感悟",
+      "is_root": false,
+      "predecessor_ids": [
+        4040102
+      ],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [
+        "精准采集心得≥5000"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        758.2,
+        651.4
+      ]
+    },
+    {
+      "id": 4040201,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "灰尘拜拜",
+      "desc": "可制作具有动物清洁能力的套装",
+      "category": "ability_suit",
+      "category_label": "能力套装",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [
+        4040202
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        819.6,
+        604.1
+      ]
+    },
+    {
+      "id": 4040202,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "动物清洁",
+      "desc": "清洁西西亚城相关的高品质动物时，可获得精粹",
+      "category": "gathering_insight",
+      "category_label": "采集与生活感悟",
+      "is_root": false,
+      "predecessor_ids": [
+        4040201
+      ],
+      "successor_ids": [
+        4040203
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [
+        "细致清洁心得≥1000"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        745.4,
+        615.6
+      ]
+    },
+    {
+      "id": 4040203,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "动物清洁",
+      "desc": "清洁茜尔梅斯·浊息之沼、茜尔梅斯相关的高品质动物时，可获得精粹",
+      "category": "gathering_insight",
+      "category_label": "采集与生活感悟",
+      "is_root": false,
+      "predecessor_ids": [
+        4040202
+      ],
+      "successor_ids": [
+        4040204
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [
+        "细致清洁心得≥3000"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        670.4,
+        609.5
+      ]
+    },
+    {
+      "id": 4040204,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "动物清洁",
+      "desc": "清洁西西亚城、茜尔梅斯·浊息之沼、茜尔梅斯相关的高品质动物时，可有概率双倍",
+      "category": "gathering_insight",
+      "category_label": "采集与生活感悟",
+      "is_root": false,
+      "predecessor_ids": [
+        4040203
+      ],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [
+        "细致清洁心得≥5000"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        624.5,
+        623.7
+      ]
+    },
+    {
+      "id": 4040301,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "午后暖阳",
+      "desc": "可制作具有捕虫能力的套装",
+      "category": "ability_suit",
+      "category_label": "能力套装",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [
+        4040302
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1084.9,
+        547.4
+      ]
+    },
+    {
+      "id": 4040302,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "捕虫",
+      "desc": "捕捉西西亚城相关的高品质昆虫时，可获得精粹",
+      "category": "gathering_insight",
+      "category_label": "采集与生活感悟",
+      "is_root": false,
+      "predecessor_ids": [
+        4040301
+      ],
+      "successor_ids": [
+        4040303
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [
+        "敏捷捕虫心得≥1000"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        1178.7,
+        544.0
+      ]
+    },
+    {
+      "id": 4040303,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "捕虫",
+      "desc": "捕捉茜尔梅斯·浊息之沼、茜尔梅斯相关的高品质昆虫时，可获得精粹",
+      "category": "gathering_insight",
+      "category_label": "采集与生活感悟",
+      "is_root": false,
+      "predecessor_ids": [
+        4040302
+      ],
+      "successor_ids": [
+        4040304
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [
+        "敏捷捕虫心得≥3000"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        1208.4,
+        492.1
+      ]
+    },
+    {
+      "id": 4040304,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "捕虫",
+      "desc": "捕捉西西亚城、茜尔梅斯·浊息之沼、茜尔梅斯相关的高品质昆虫时，可有概率双倍",
+      "category": "gathering_insight",
+      "category_label": "采集与生活感悟",
+      "is_root": false,
+      "predecessor_ids": [
+        4040303
+      ],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [
+        "敏捷捕虫心得≥5000"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        1310.3,
+        488.0
+      ]
+    },
+    {
+      "id": 4040401,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "悠然水畔",
+      "desc": "可制作具有钓鱼能力的套装",
+      "category": "ability_suit",
+      "category_label": "能力套装",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [
+        4040402
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1066.0,
+        574.4
+      ]
+    },
+    {
+      "id": 4040402,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "钓鱼",
+      "desc": "钓到西西亚城相关的高品质鱼类时，可获得精粹",
+      "category": "gathering_insight",
+      "category_label": "采集与生活感悟",
+      "is_root": false,
+      "predecessor_ids": [
+        4040401
+      ],
+      "successor_ids": [
+        4040403
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [
+        "悠然钓鱼心得≥1000"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        1148.3,
+        566.7
+      ]
+    },
+    {
+      "id": 4040403,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "钓鱼",
+      "desc": "钓到茜尔梅斯·浊息之沼、茜尔梅斯相关的高品质鱼类时，可获得精粹",
+      "category": "gathering_insight",
+      "category_label": "采集与生活感悟",
+      "is_root": false,
+      "predecessor_ids": [
+        4040402
+      ],
+      "successor_ids": [
+        4040404
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [
+        "悠然钓鱼心得≥3000"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        1217.8,
+        567.7
+      ]
+    },
+    {
+      "id": 4040404,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "钓鱼",
+      "desc": "钓到西西亚城、茜尔梅斯·浊息之沼、茜尔梅斯相关的高品质鱼类时，可有概率双倍",
+      "category": "gathering_insight",
+      "category_label": "采集与生活感悟",
+      "is_root": false,
+      "predecessor_ids": [
+        4040403
+      ],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [
+        "悠然钓鱼心得≥5000"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        1264.0,
+        555.5
+      ]
+    },
+    {
+      "id": 4040501,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "石心微明",
+      "desc": "可制作具有鉴石能力的套装",
+      "category": "ability_suit",
+      "category_label": "能力套装",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [
+        4040502
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 10000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        843.2,
+        608.9
+      ]
+    },
+    {
+      "id": 4040502,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "如缀昔光",
+      "desc": "",
+      "category": "clothing_sketch",
+      "category_label": "服装设计图",
+      "is_root": false,
+      "predecessor_ids": [
+        4040501
+      ],
+      "successor_ids": [
+        4040503
+      ],
+      "tokens_each": 1,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [
+        "独到鉴石心得≥100"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        810.1,
+        627.8
+      ]
+    },
+    {
+      "id": 4040503,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "鉴石",
+      "desc": "采集西西亚城相关的高品质宝石时，可获得精粹",
+      "category": "cicia_gemology",
+      "category_label": "鉴石能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4040502
+      ],
+      "successor_ids": [
+        4040504
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [
+        "独到鉴石心得≥150"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        769.6,
+        631.8
+      ]
+    },
+    {
+      "id": 4040504,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "粼波碧想",
+      "desc": "",
+      "category": "clothing_sketch",
+      "category_label": "服装设计图",
+      "is_root": false,
+      "predecessor_ids": [
+        4040503
+      ],
+      "successor_ids": [
+        4040505
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 20000
+        }
+      ],
+      "conditions": [
+        "独到鉴石心得≥250"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        719.0,
+        632.9
+      ]
+    },
+    {
+      "id": 4040505,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "鉴石",
+      "desc": "采集茜尔梅斯·浊息之沼、茜尔梅斯相关的高品质宝石时，可获得精粹",
+      "category": "cicia_gemology",
+      "category_label": "鉴石能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4040504
+      ],
+      "successor_ids": [
+        4040506
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 30000
+        }
+      ],
+      "conditions": [
+        "独到鉴石心得≥350"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        679.9,
+        666.2
+      ]
+    },
+    {
+      "id": 4040506,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "夜阑反叛",
+      "desc": "",
+      "category": "clothing_sketch",
+      "category_label": "服装设计图",
+      "is_root": false,
+      "predecessor_ids": [
+        4040505
+      ],
+      "successor_ids": [
+        4040507
+      ],
+      "tokens_each": 2,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 30000
+        }
+      ],
+      "conditions": [
+        "独到鉴石心得≥450"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        679.9,
+        698.0
+      ]
+    },
+    {
+      "id": 4040507,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "鉴石",
+      "desc": "采集西西亚城、茜尔梅斯·浊息之沼、茜尔梅斯相关的高品质宝石时，可有概率双倍",
+      "category": "cicia_gemology",
+      "category_label": "鉴石能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4040506
+      ],
+      "successor_ids": [
+        4040508
+      ],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 50000
+        }
+      ],
+      "conditions": [
+        "独到鉴石心得≥550"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        615.8,
+        701.6
+      ]
+    },
+    {
+      "id": 4040508,
+      "version_id": 4,
+      "graph_id": 404,
+      "title": "鉴石",
+      "desc": "采集西西亚城、茜尔梅斯·浊息之沼、茜尔梅斯相关的高品质宝石时，双倍概率增加",
+      "category": "cicia_gemology",
+      "category_label": "鉴石能力",
+      "is_root": false,
+      "predecessor_ids": [
+        4040507
+      ],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 1,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 100000
+        }
+      ],
+      "conditions": [
+        "独到鉴石心得≥650"
+      ],
+      "observability": "exact",
+      "screen_pos": [
+        575.2,
+        692.5
+      ]
+    },
+    {
+      "id": 4050101,
+      "version_id": 4,
+      "graph_id": 405,
+      "title": "搭配潜力 · 典雅",
+      "desc": "西西亚搭配玩法中，所有服装典雅属性每级 +10（最高 10 级 +100）",
+      "category": "styling_buff",
+      "category_label": "搭配潜力加成",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 10,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 150000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1217.8,
+        693.2
+      ]
+    },
+    {
+      "id": 4050102,
+      "version_id": 4,
+      "graph_id": 405,
+      "title": "搭配潜力 · 清新",
+      "desc": "西西亚搭配玩法中，所有服装清新属性每级 +10（最高 10 级 +100）",
+      "category": "styling_buff",
+      "category_label": "搭配潜力加成",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 10,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 150000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1258.3,
+        708.8
+      ]
+    },
+    {
+      "id": 4050103,
+      "version_id": 4,
+      "graph_id": 405,
+      "title": "搭配潜力 · 甜美",
+      "desc": "西西亚搭配玩法中，所有服装甜美属性每级 +10（最高 10 级 +100）",
+      "category": "styling_buff",
+      "category_label": "搭配潜力加成",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 10,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 150000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1172.6,
+        775.6
+      ]
+    },
+    {
+      "id": 4050104,
+      "version_id": 4,
+      "graph_id": 405,
+      "title": "搭配潜力 · 性感",
+      "desc": "西西亚搭配玩法中，所有服装性感属性每级 +10（最高 10 级 +100）",
+      "category": "styling_buff",
+      "category_label": "搭配潜力加成",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 10,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 150000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1192.9,
+        832.3
+      ]
+    },
+    {
+      "id": 4050105,
+      "version_id": 4,
+      "graph_id": 405,
+      "title": "搭配潜力 · 帅气",
+      "desc": "西西亚搭配玩法中，所有服装帅气属性每级 +10（最高 10 级 +100）",
+      "category": "styling_buff",
+      "category_label": "搭配潜力加成",
+      "is_root": true,
+      "predecessor_ids": [],
+      "successor_ids": [],
+      "tokens_each": 3,
+      "max_level": 10,
+      "costs_each": [
+        {
+          "item_id": 2,
+          "name": "噗灵",
+          "amount": 150000
+        }
+      ],
+      "conditions": [],
+      "observability": "exact",
+      "screen_pos": [
+        1147.9,
+        845.4
+      ]
     }
   ]
 }
