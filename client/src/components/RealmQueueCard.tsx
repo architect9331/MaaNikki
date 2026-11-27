@@ -741,7 +741,7 @@ export function RealmCollectionWorkflow({
           ? isPowerBlessing
             ? `五星闪光已收集 ${kindDone} / ${kindTotal} 个种类（战力模式）。`
             : `五星闪光已收集 ${progress.owned.size} / ${progress.target} 个颜色。`
-          : '尚无闪光记录。第一次运行前请清除祝福闪光仓库的筛选，会先读取或整理全部闪光。'}
+          : '尚无闪光记录。第一次运行会先读取或整理全部闪光。'}
       </p>
       {workflow === 'Managed' && reserveBling > 0 && (
         <p className="text-text-secondary">已设置保留噗灵：{reserveBling.toLocaleString()}（升级后噗灵不会低于该数值）。</p>

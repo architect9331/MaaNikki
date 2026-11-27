@@ -91,7 +91,6 @@ export function FirstRunSetup() {
       {['游戏画面推荐 1920×1080（非 16:9 窗口运行时默认自动调整并恢复）。',
         '已在「设置 → 任务设置 → 游戏键位」核对按键。',
         '所选任务涉及的地图、传送点、能力和关卡已经解锁。',
-        ...(groups.realm && collection ? ['已清除游戏内祝福闪光仓库的筛选。'] : []),
       ].map((item) => <li key={item} className="flex gap-2"><Check className="mt-1 h-4 w-4 shrink-0 text-accent" />{item}</li>)}
     </ul>
     <p className="rounded-lg bg-bg-primary p-3 text-xs leading-5">在用 Codex 或 Claude Code？可以在「设置 → AI 助手」接入，让它们帮你完成配置。</p>
