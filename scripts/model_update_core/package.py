@@ -77,6 +77,11 @@ def assemble(run):
             link_or_copy(source, assembled / relative)
     for path in (root / "resource/model/ocr").iterdir():
         link_or_copy(path, assembled / "resource/model/ocr" / path.name)
+    for sub in ("resource/model/backpack", "resource/model/rejuvenate"):
+        if (root / sub).is_dir():
+            for path in (root / sub).iterdir():
+                if path.is_file():
+                    link_or_copy(path, assembled / sub / path.name)
     badge = root / "resource/model/blessing_badge.npz"
     if badge.is_file():
         link_or_copy(badge, assembled / "resource/model/blessing_badge.npz")

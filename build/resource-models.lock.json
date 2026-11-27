@@ -24,15 +24,15 @@
     },
     {
       "path": "resource/model/blessing_identity.onnx",
-      "sha256": "65cfc33f73b5fa056a6447f000185676f0cec3a5643f11cc412fb540aac04e4e",
-      "size": 5123998,
-      "source": "MaaNikki blessing identity model and label metadata, 2026-11-01"
+      "sha256": "b4157b15f67eae6d68d951eaceec87d7f2ba558e30ceea4ecfe6326c1236eeec",
+      "size": 5248633,
+      "source": "MaaNikki blessing identity model and label metadata, 2026-11-27, update 3017"
     },
     {
       "path": "resource/model/blessing_identity.json",
-      "sha256": "45a2c233d8bc9b40734890fb7f836ed266b2f803f04979741879058c4fd3e390",
-      "size": 66639,
-      "source": "MaaNikki blessing identity model and label metadata, 2026-11-01"
+      "sha256": "2f8dc4b14782959126f7d50ba7eab2b3f81df13af8c3efe59d30641ea216eb79",
+      "size": 72763,
+      "source": "MaaNikki blessing identity model and label metadata, 2026-11-27, update 3017"
     },
     {
       "path": "resource/model/blessing_badge.onnx",
