@@ -22,7 +22,8 @@ function pullTime(value: string) {
   return value;
 }
 function activeBannerCopy(item: ReturnType<typeof activeBanners>[number]) {
-  const since = item.since > 0 ? ` · 距上次五星至少 ${item.since} 抽` : '';
+  const highLabel = item.kind === 5 ? '星冕' : '五星';
+  const since = item.since > 0 ? ` · 距上次${highLabel}至少 ${item.since} 抽` : '';
   if (!item.total) {
     return { headline: '套装目录待更新', detail: `当前目录暂未收录该卡池套装${since}` };
   }
@@ -107,7 +108,7 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
       const outfitIds = sorted.map((item) => item.oid);
       const outfitNames = sorted.map((item) => item.info?.name).filter((name): name is string => Boolean(name));
       const thumbKeys = outfitIds.map((oid) => outfitThumbLookup[oid]).filter((key): key is string => Boolean(key));
-      const maxRarity = sorted[0]?.info?.rarity ?? (entry.kind === 3 ? 4 : 5);
+      const maxRarity = sorted[0]?.info?.rarity ?? (entry.kind === 3 ? 4 : entry.kind === 5 ? 8 : 5);
       const primaryName = outfitNames[0] ?? '';
       const optionLabel = entry.kind === 1
         ? `${entry.name}（常驻）`
@@ -357,7 +358,7 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
             const subKey = item.outfitIds[1] ? outfitThumbLookup[item.outfitIds[1]] : undefined;
             const mainThumb = mainKey ? thumbMap[mainKey] : undefined;
             const subThumb = subKey ? thumbMap[subKey] : undefined;
-            const primaryRarity = item.kind === 3 ? 4 : 5;
+            const primaryRarity = item.kind === 3 ? 4 : item.kind === 5 ? 8 : 5;
             const pct = item.total > 0 ? Math.min(100, (item.obtained / item.total) * 100) : 0;
             const isSelected = banner === item.id;
             return <button key={item.id} onClick={() => { setView('outfits'); setBanner(item.id); setRarity('all'); setCompletion('all'); setSearch(''); }}
@@ -389,7 +390,11 @@ export function ResonancePage({ onClose }: { onClose: () => void }) {
                   <div className="flex items-center gap-1.5">
                     <span className={clsx(
                       'shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium',
-                      primaryRarity === 5 ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : 'bg-accent/12 text-accent',
+                      primaryRarity >= 8
+                        ? 'bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-400'
+                        : primaryRarity === 5
+                          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                          : 'bg-accent/12 text-accent',
                     )}>
                       {bannerKindLabel(item.kind)}
                     </span>

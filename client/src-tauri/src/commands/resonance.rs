@@ -1164,7 +1164,7 @@ fn parse_notebook_pulls(response: &Value) -> Result<Vec<NotebookPull>, SyncError
                 .to_owned();
             let rarity = u8::try_from(number(&row["rarity"])?)
                 .map_err(|_| failure("美鸭梨手账星级无效。"))?;
-            if !(1..=5).contains(&rarity) {
+            if !(1..=8).contains(&rarity) {
                 return Err(failure("美鸭梨手账星级无效。"));
             }
             Ok(NotebookPull {
