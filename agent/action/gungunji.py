@@ -60,10 +60,25 @@ def _parse_bling(raw: str | None) -> int | None:
     return int(round(val))
 
 
-def _box_center(box) -> tuple[int, int] | None:
-    if not box or len(box) < 4:
+def _rect_xywh(box) -> tuple[int, int, int, int] | None:
+    """Extract (x, y, w, h) from a MaaFramework Rect or 4-element sequence."""
+    if box is None:
         return None
-    return int(box[0] + box[2] / 2), int(box[1] + box[3] / 2)
+    if all(hasattr(box, attr) for attr in ("x", "y", "w", "h")):
+        return int(box.x), int(box.y), int(box.w), int(box.h)
+    try:
+        vals = tuple(int(v) for v in box)
+    except TypeError:
+        return None
+    return vals[:4] if len(vals) >= 4 else None
+
+
+def _box_center(box) -> tuple[int, int] | None:
+    xywh = _rect_xywh(box)
+    if xywh is None:
+        return None
+    x, y, w, h = xywh
+    return int(x + w / 2), int(y + h / 2)
 
 
 def _find_text_box(rt: Runtime, roi: list[int], pattern: re.Pattern[str], frame=None):
@@ -134,20 +149,35 @@ class GungunjiAction(CustomAction):
         return False
 
     def _ensure_machine_ui(self, rt: Runtime) -> bool:
-        """Verify we are on the Gungunji screen; press interact once if standing in front."""
-        frame = rt.capture()
-        if self._is_main_screen(rt, frame):
-            return True
-        box, _ = _find_text_box(rt, INTERACT_PROMPT_ROI, _RE_INTERACT, frame)
-        if box:
-            rt.log("检测到滚滚机「启动」交互提示，正在进入抽取界面。")
-            rt.key("interact", 0)
-            for _ in range(16):
-                if rt.stopped:
-                    return False
+        """Support starting either directly inside the Gungunji UI or standing in front of it."""
+        for attempt in range(5):
+            if rt.stopped:
+                return False
+            frame = rt.capture()
+            if self._is_main_screen(rt, frame):
+                rt.log("已在惊喜滚滚机抽取界面，直接开始抽取。")
+                rt.pause(0.45)
+                return True
+            # Handle lingering settlement screen if user resumed mid-reveal.
+            if _find_text_box(rt, CONTINUE_ROI, _RE_CONTINUE, frame)[0] or _find_text_box(rt, CONGRATS_ROI, _RE_CONGRATS, frame)[0]:
+                rt.action("Click", target=[SAFE_BLANK_CLICK[0], SAFE_BLANK_CLICK[1]])
+                rt.pause(0.45)
+                continue
+            box, _ = _find_text_box(rt, INTERACT_PROMPT_ROI, _RE_INTERACT, frame)
+            if box:
+                rt.log("检测到滚滚机「启动」交互提示，正在进入抽取界面。")
+                rt.key("interact", 0)
+                for _ in range(18):
+                    if rt.stopped:
+                        return False
+                    rt.pause(0.35)
+                    if self._is_main_screen(rt, rt.capture()):
+                        # Wait briefly for pull cost labels & buttons to finish fade-in.
+                        rt.pause(0.5)
+                        return True
+                return False
+            if attempt < 4:
                 rt.pause(0.35)
-                if self._is_main_screen(rt, rt.capture()):
-                    return True
         return False
 
     def _detect_stop_condition(self, rt: Runtime, frame) -> str | None:

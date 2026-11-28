@@ -171,6 +171,19 @@ def _ocr_all(rt, roi: list[int], frame: np.ndarray | None = None) -> list[Any]:
     return list(rows)
 
 
+def _rect_xywh(box) -> tuple[int, int, int, int] | None:
+    """Extract (x, y, w, h) from a MaaFramework Rect or 4-element sequence."""
+    if box is None:
+        return None
+    if all(hasattr(box, attr) for attr in ("x", "y", "w", "h")):
+        return int(box.x), int(box.y), int(box.w), int(box.h)
+    try:
+        vals = tuple(int(v) for v in box)
+    except TypeError:
+        return None
+    return vals[:4] if len(vals) >= 4 else None
+
+
 class SketchScanner:
     """Scan the in-game 设计图 page to record unlocked & craftable sketches."""
 
@@ -207,9 +220,12 @@ class SketchScanner:
 
     def _click_tab(self, label: str) -> bool:
         res = self.rt.recognize("MaaNikki_Daily_OCR", {"roi": TAB_LIST_ROI, "expected": re.escape(label)})
-        if not res or not res.hit or not getattr(res, "box", None):
+        if not res or not res.hit:
             return False
-        bx, by, bw, bh = res.box
+        xywh = _rect_xywh(getattr(res, "box", None))
+        if xywh is None:
+            return False
+        bx, by, bw, bh = xywh
         self.rt.action("Click", target=[int(bx + bw / 2), int(by + bh / 2)])
         self.rt.pause(0.55)
         return True
@@ -251,11 +267,12 @@ class SketchScanner:
         if frame is None:
             return
         region_rows = _ocr_all(self.rt, MIRACLE_REGION_ROI, frame)
-        region_tabs = [
-            (str(getattr(r, "text", "") or "").strip(), list(r.box))
-            for r in region_rows
-            if getattr(r, "box", None) and _has_cjk(str(getattr(r, "text", "") or "").strip())
-        ]
+        region_tabs = []
+        for r in region_rows:
+            xywh = _rect_xywh(getattr(r, "box", None))
+            text = str(getattr(r, "text", "") or "").strip()
+            if xywh is not None and _has_cjk(text):
+                region_tabs.append((text, xywh))
         if not region_tabs:
             region_tabs = [("当前", None)]
         for _rname, box in region_tabs:
@@ -288,21 +305,22 @@ class SketchScanner:
     def _scan_suit_frame(self, frame: np.ndarray) -> None:
         rows = _ocr_all(self.rt, SUIT_GRID_ROI, frame)
         progress_boxes: list[tuple[float, float, str]] = []
-        name_candidates: list[tuple[str, list[int]]] = []
+        name_candidates: list[tuple[str, tuple[int, int, int, int]]] = []
         for row in rows:
             raw = str(getattr(row, "text", "") or "").strip()
-            box = getattr(row, "box", None)
-            if not raw or not box or len(box) < 4:
+            xywh = _rect_xywh(getattr(row, "box", None))
+            if not raw or xywh is None:
                 continue
+            bx, by, bw, bh = xywh
             cleaned = re.sub(r"\s+", "", raw)
             if _RE_PROGRESS.match(cleaned) or _RE_PROGRESS_SLASH_CONFUSED.match(cleaned):
-                cx = box[0] + box[2] * 0.5
-                cy = box[1] + box[3] * 0.5
+                cx = bx + bw * 0.5
+                cy = by + bh * 0.5
                 progress_boxes.append((cx, cy, cleaned))
                 continue
             if len(raw) < 2 or _RE_IGNORE.match(raw) or not _has_cjk(raw):
                 continue
-            name_candidates.append((raw, [int(v) for v in box]))
+            name_candidates.append((raw, xywh))
 
         for raw, box in name_candidates:
             nx, ny, nw, nh = box
@@ -345,12 +363,12 @@ class SketchScanner:
         rows = _ocr_all(self.rt, ITEM_GRID_ROI, frame)
         for row in rows:
             raw = str(getattr(row, "text", "") or "").strip()
-            box = getattr(row, "box", None)
-            if not raw or not box or len(box) < 4:
+            xywh = _rect_xywh(getattr(row, "box", None))
+            if not raw or xywh is None:
                 continue
             if len(raw) < 2 or _RE_IGNORE.match(raw) or not _has_cjk(raw):
                 continue
-            nx, ny, nw, nh = [int(v) for v in box]
+            nx, ny, nw, nh = xywh
             if ny < 205:
                 continue
             cx = nx + nw * 0.5
