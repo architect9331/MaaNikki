@@ -228,15 +228,13 @@ class GungunjiAction(CustomAction):
                     rt.pause(0.45)
                     continue
 
-            # 2. Pull animation skip prompt (bottom-right: F 跳过)
+            # 2. Pull animation skip prompt (bottom-right: F 跳过; keyboard-only, clicking has no effect)
             skip_box, _ = _find_text_box(rt, SKIP_ROI, _RE_SKIP, frame)
             if skip_box:
                 saw_transition = True
-                center = _box_center(skip_box)
-                if center:
-                    rt.action("Click", target=[center[0], center[1]])
-                    rt.pause(0.45)
-                    continue
+                rt.key("interact", 0)
+                rt.pause(0.45)
+                continue
 
             # 3. New item reveal / 恭喜获得 settlement (bottom-right: F / 空白区域继续)
             cont_box, _ = _find_text_box(rt, CONTINUE_ROI, _RE_CONTINUE, frame)
