@@ -21,6 +21,14 @@ BLING_ROI = [1052, 16, 105, 34]
 RIGHT_TITLE_ROI = [895, 80, 345, 52]
 TAB_MATERIALS = [457, 36]
 TAB_GROWTH = [539, 36]
+TAB_BAR_Y = 36
+TAB_STEP_X = 82
+# Safe horizontal span of top backpack category icons in 1280px layout
+# (avoids left title/back controls x < 310 and right Bling/currency area x > 700).
+TAB_BAR_X_MIN = 310
+TAB_BAR_X_MAX = 700
+TAB_PROBE_XS = (457, 375, 539, 416, 498, 334, 580, 621, 662)
+_TAB1_EXCLUDED_KEYWORDS = ("养成", "養成", "家园", "家園", "建筑", "建築", "家具", "染色", "染料", "外观", "外觀")
 GRID_SCROLL_TARGET = [420, 360]
 
 FIRST_X = 42
@@ -904,22 +912,97 @@ def _scan_tab(
     return counts, stats, deferred_slots
 
 
-def _switch_tab(rt, *, want_growth: bool) -> bool:
-    target = TAB_GROWTH if want_growth else TAB_MATERIALS
-    for _ in range(3):
+def _classify_backpack_tab(header: str) -> int | None:
+    """Classify the top-left backpack header into Tab 1 (材料) or Tab 2 (养成材料)."""
+    text = re.sub(r"[\s·・•.,。:：\-_/|]+", "", header or "")
+    if not text:
+        return None
+    if "养成" in text or "養成" in text:
+        return 2
+    if "材料" in text and not any(bad in text for bad in _TAB1_EXCLUDED_KEYWORDS):
+        return 1
+    return None
+
+
+def _switch_tab(rt, *, want_growth: bool, tab_pos: dict[int, int] | None = None) -> bool:
+    """Switch to Tab 1 (材料) or Tab 2 (养成材料) by verifying the top-left header.
+
+    Probes dynamically along the top category icon bar (y=36) and caches confirmed X
+    coordinates so shifts in the centered tab bar (e.g. v3.0 adding backpack categories)
+    recover automatically without hardcoding a single game version's tab layout.
+    """
+    want_tab = 2 if want_growth else 1
+    other_tab = 1 if want_growth else 2
+    cache = tab_pos if tab_pos is not None else {}
+    prev_cached_want = cache.get(want_tab)
+
+    frame = rt.capture()
+    last_header = rt.text(HEADER_ROI, image=frame) if frame is not None else ""
+    if _classify_backpack_tab(last_header) == want_tab:
+        return True
+
+    queue: list[int] = []
+
+    def _enqueue(xs: list[int] | tuple[int, ...], *, front: bool = False) -> None:
+        valid = [int(x) for x in xs if TAB_BAR_X_MIN <= int(x) <= TAB_BAR_X_MAX]
+        if front:
+            queue[:0] = valid
+        else:
+            queue.extend(valid)
+
+    if prev_cached_want is not None:
+        _enqueue([prev_cached_want])
+    if other_tab in cache:
+        step = TAB_STEP_X if want_growth else -TAB_STEP_X
+        base = cache[other_tab]
+        _enqueue([base + step, base + step // 2, base + int(step * 1.5)])
+
+    default_x = TAB_GROWTH[0] if want_growth else TAB_MATERIALS[0]
+    _enqueue([default_x])
+    _enqueue(sorted(TAB_PROBE_XS, key=lambda x: abs(x - default_x)))
+
+    tried: list[int] = []
+    clicks = 0
+    max_clicks = 8
+    while queue and clicks < max_clicks:
         if rt.stopped:
             return False
-        frame = rt.capture()
-        header = rt.text(HEADER_ROI, image=frame) if frame is not None else ""
-        if want_growth and "养成" in header:
-            return True
-        if not want_growth and "材料" in header and "养成" not in header:
-            return True
-        if not rt.action("Click", target=target) or not rt.pause(0.45):
+        x = queue.pop(0)
+        if any(abs(x - prev) <= 14 for prev in tried):
+            continue
+        tried.append(x)
+        clicks += 1
+        prev_header = last_header
+        if not rt.action("Click", target=[x, TAB_BAR_Y]) or not rt.pause(0.45):
             return False
-    frame = rt.capture()
-    header = rt.text(HEADER_ROI, image=frame) if frame is not None else ""
-    return ("养成" in header) if want_growth else ("材料" in header and "养成" not in header)
+        frame = rt.capture()
+        last_header = rt.text(HEADER_ROI, image=frame) if frame is not None else ""
+        seen_tab = _classify_backpack_tab(last_header)
+        if seen_tab == want_tab:
+            cache[want_tab] = x
+            return True
+        if clicks == 1 and last_header == prev_header and (seen_tab is None or x == prev_cached_want):
+            if not rt.action("Click", target=[x, TAB_BAR_Y]) or not rt.pause(0.45):
+                return False
+            frame = rt.capture()
+            last_header = rt.text(HEADER_ROI, image=frame) if frame is not None else ""
+            seen_tab = _classify_backpack_tab(last_header)
+            if seen_tab == want_tab:
+                cache[want_tab] = x
+                return True
+        if seen_tab == other_tab:
+            if last_header != prev_header or clicks == 1:
+                if last_header != prev_header or other_tab not in cache:
+                    cache[other_tab] = x
+                step = TAB_STEP_X if want_growth else -TAB_STEP_X
+                _enqueue([x + step, x + step // 2, x + int(step * 1.5)], front=True)
+
+    rt.log(
+        f"背包扫描：未能切换到{'养成材料' if want_growth else '材料'}页"
+        f"（最后识别标题：{last_header or '空'}）。",
+        detail=True,
+    )
+    return False
 
 
 def scan_backpack_inventory(
@@ -959,6 +1042,7 @@ def scan_backpack_inventory(
 
         deferred_by_tab: dict[int, set[tuple[int, int]]] = {}
         entered_tabs: set[int] = set()
+        tab_pos: dict[int, int] = {}
         use_tall = 1 in scan_tabs
         tall_ctx = tall_window(rt) if use_tall else nullcontext(False)
         with tall_ctx as is_tall:
@@ -968,7 +1052,7 @@ def scan_backpack_inventory(
 
             for tab in scan_tabs:
                 want_growth = tab == 2
-                if not _switch_tab(rt, want_growth=want_growth):
+                if not _switch_tab(rt, want_growth=want_growth, tab_pos=tab_pos):
                     if tab == scan_tabs[0]:
                         return None
                     continue
@@ -986,7 +1070,7 @@ def scan_backpack_inventory(
             want_growth = tab == 2
             tab_key = f"tab{tab}"
             rt.log("背包扫描：已恢复常规窗口，正在补充识别列表末尾待定材料。", detail=True)
-            if _switch_tab(rt, want_growth=want_growth):
+            if _switch_tab(rt, want_growth=want_growth, tab_pos=tab_pos):
                 dc, ds, rem = _scan_tab(
                     rt,
                     model,
