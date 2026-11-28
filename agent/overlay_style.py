@@ -485,8 +485,8 @@ def hud_scale(client_w: int, client_h: int) -> tuple[float, float, float]:
 
 def hud_top_center_anchor(client_w: int, client_h: int, box_w: int, anchor_y: int | None = None) -> tuple[int, int]:
     sx, sy, s = hud_scale(client_w, client_h)
-    y = max(6, round(14 * sy)) if anchor_y is None else anchor_y
-    margin = max(6, round(10 * s))
+    y = max(3, round(5 * sy)) if anchor_y is None else anchor_y
+    margin = max(6, round(8 * s))
     x = max(margin, min(max(margin, client_w - box_w - margin), (client_w - box_w) // 2))
     return x, y
 
@@ -494,8 +494,8 @@ def hud_top_center_anchor(client_w: int, client_h: int, box_w: int, anchor_y: in
 def hud_max_width(client_w: int, client_h: int) -> int:
     sx, _, s = hud_scale(client_w, client_h)
     if client_w >= 900:
-        return max(round(280 * s), min(client_w - round(450 * sx), round(620 * s)))
-    return max(180, client_w - round(24 * s))
+        return max(round(220 * s), min(client_w - round(520 * sx), round(440 * s)))
+    return max(160, client_w - round(24 * s))
 
 
 def role_colors(theme: OverlayTheme, role: str, *, emphasized: bool = False) -> dict:
@@ -605,27 +605,27 @@ def measure_hud_card(
     """Measure exact pixel dimensions & wrapped lines for the unified Top-Center HUD."""
     _, _, s = hud_scale(client_w, client_h)
     font_fn = bind(gdi, "CreateFontW", w.HFONT, *([ctypes.c_int] * 5), *([w.DWORD] * 8), w.LPCWSTR)
-    f_title_h = max(12, round(14 * s))
-    f_body_h = max(11, round(12 * s))
-    f_chip_h = max(10, round(11 * s))
+    f_title_h = max(10, round(11.5 * s))
+    f_body_h = max(9, round(10 * s))
+    f_chip_h = max(9, round(9.5 * s))
     f_title = f_body = f_chip = None
     old_font = None
     try:
         f_title = checked(font_fn(-f_title_h, 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建标题字体")
         f_body = checked(font_fn(-f_body_h, 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建正文字体")
         f_chip = checked(font_fn(-f_chip_h, 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 5, 0, FONT_FAMILY), "创建标签字体")
-        cap_w = max(180, min(client_w - round(20 * s), max_width or hud_max_width(client_w, client_h)))
-        pad_l = round(14 * s)
-        pad_r = round(12 * s)
-        pad_y = round(8 * s)
-        spark_sz = max(12, round(14 * s))
-        spark_gap = round(7 * s)
-        chip_pad_x = round(7 * s)
-        chip_gap = round(8 * s)
-        row_gap = round(4 * s)
+        cap_w = max(160, min(client_w - round(16 * s), max_width or hud_max_width(client_w, client_h)))
+        pad_l = max(8, round(10 * s))
+        pad_r = max(7, round(9 * s))
+        pad_y = max(3, round(4.5 * s))
+        spark_sz = max(9, round(11 * s))
+        spark_gap = max(4, round(5 * s))
+        chip_pad_x = max(4, round(5 * s))
+        chip_gap = max(4, round(6 * s))
+        row_gap = max(1, round(2 * s))
 
         content_x_off = pad_l + spark_sz + spark_gap
-        max_inner_w = max(80, cap_w - content_x_off - pad_r)
+        max_inner_w = max(72, cap_w - content_x_off - pad_r)
 
         chip_w = chip_h = chip_text_h = 0
         if badge:
@@ -633,7 +633,7 @@ def measure_hud_card(
             bw, bh = _gdi_text_extent(dc, gdi, badge)
             chip_w = bw + chip_pad_x * 2
             chip_text_h = bh
-            chip_h = max(round(18 * s), bh + round(3 * s))
+            chip_h = max(round(14 * s), bh + round(2 * s))
 
         h_first = select_fn(dc, f_title)
         if old_font is None:
@@ -649,15 +649,15 @@ def measure_hud_card(
         sub_max_w = 0
         if subtitle:
             select_fn(dc, f_body)
-            sub_lines = _wrap_text_px(dc, gdi, subtitle, max_inner_w, max_lines=2)
+            sub_lines = _wrap_text_px(dc, gdi, subtitle, max_inner_w, max_lines=1)
             for line in sub_lines:
                 lw, lh = _gdi_text_extent(dc, gdi, line)
                 sub_max_w = max(sub_max_w, lw)
                 sub_h_line = max(sub_h_line, lh)
 
-        inner_w = max(header_row_w, sub_max_w, round(120 * s))
+        inner_w = max(header_row_w, sub_max_w, round(90 * s))
         box_w = min(cap_w, content_x_off + inner_w + pad_r)
-        sub_block_h = len(sub_lines) * (sub_h_line + round(2 * s)) - (round(2 * s) if sub_lines else 0)
+        sub_block_h = len(sub_lines) * (sub_h_line + round(1.5 * s)) - (round(1.5 * s) if sub_lines else 0)
         box_h = pad_y * 2 + header_row_h + ((row_gap + sub_block_h) if sub_lines else 0)
 
         return {
@@ -706,7 +706,7 @@ def draw_hud_card(
     *,
     role: str = "accent",
     emphasized: bool = False,
-    opacity: float = 0.88,
+    opacity: float = 0.60,
 ) -> tuple[int, int, int, int]:
     """Paint the measured unified HUD banner onto a BGRA buffer at (x0, y0)."""
     s = layout["s"]
@@ -714,32 +714,32 @@ def draw_hud_card(
     box_h = layout["height"]
     x1, y1 = x0 + box_w, y0 + box_h
     colors = role_colors(theme, role, emphasized=emphasized)
-    radius = max(6, round(10 * s))
+    radius = max(5, round(7 * s))
 
     if emphasized:
-        glow_pad = max(2, round(2.5 * s))
+        glow_pad = max(2, round(2 * s))
         _blend_rect(
             pixels, x0 - glow_pad, y0 - glow_pad, x1 + glow_pad, y1 + glow_pad,
-            colors["stripe"], radius=radius + glow_pad, opacity=0.22,
+            colors["stripe"], radius=radius + glow_pad, opacity=0.14,
         )
-    sh_dx, sh_dy = round(2 * s), round(3 * s)
+    sh_dx, sh_dy = max(1, round(1.5 * s)), max(1, round(2 * s))
     _blend_rect(
         pixels, x0 + sh_dx, y0 + sh_dy, x1 + sh_dx, y1 + sh_dy,
-        (10, 9, 12), radius=radius, opacity=0.30,
+        (10, 9, 12), radius=radius, opacity=0.16,
     )
     _blend_rect(
         pixels, x0, y0, x1, y1,
         theme.hud_bg_bgr, radius=radius, opacity=opacity,
-        border_bgr=colors["border"], border_px=max(1.0, (1.6 if emphasized else 1.2) * s),
+        border_bgr=colors["border"], border_px=max(0.9, (1.3 if emphasized else 1.0) * s),
     )
 
-    stripe_x = x0 + round(5 * s)
-    stripe_w = max(2, round(3 * s))
-    stripe_pad = max(6, round(8 * s))
+    stripe_x = x0 + max(3, round(3.5 * s))
+    stripe_w = max(2, round(2.2 * s))
+    stripe_pad = max(4, round(5 * s))
     if y1 - stripe_pad > y0 + stripe_pad:
         _blend_rect(
             pixels, stripe_x, y0 + stripe_pad, stripe_x + stripe_w, y1 - stripe_pad,
-            colors["stripe"], radius=stripe_w / 2.0, opacity=0.95,
+            colors["stripe"], radius=stripe_w / 2.0, opacity=min(0.84, opacity + 0.16),
         )
 
     spark_sz = layout["spark_sz"]
@@ -752,12 +752,12 @@ def draw_hud_card(
     header_top = y0 + layout["pad_y"]
     if layout["badge"]:
         chip_y0 = header_top + max(0, (layout["header_row_h"] - layout["chip_h"]) // 2)
-        chip_r = max(4, round(6 * s))
+        chip_r = max(3, round(4.5 * s))
         _blend_rect(
             pixels, content_x, chip_y0, content_x + layout["chip_w"], chip_y0 + layout["chip_h"],
-            colors["chip_bg"], radius=chip_r, opacity=0.96,
+            colors["chip_bg"], radius=chip_r, opacity=min(0.82, opacity + 0.15),
             border_bgr=colors["stripe"] if role != "forced" else None,
-            border_px=max(0.8, 1.0 * s),
+            border_px=max(0.7, 0.9 * s),
         )
 
     font_fn = bind(gdi, "CreateFontW", w.HFONT, *([ctypes.c_int] * 5), *([w.DWORD] * 8), w.LPCWSTR)
@@ -819,7 +819,15 @@ def draw_hud_card(
 
         checked(flush(), "提交遮罩绘制")
         changed = (rgb_slice & 0x00FFFFFF) != rgb_before
-        sub_px[..., 3] = np.where(changed, 255, alpha_before)
+        text_alpha = 240 if emphasized else 224
+        if np.any(changed):
+            scale_a = text_alpha / 255.0
+            sub_px[..., :3] = np.where(
+                changed[..., None],
+                np.clip(np.rint(sub_px[..., :3].astype(np.float32) * scale_a), 0, 255).astype(np.uint8),
+                sub_px[..., :3],
+            )
+            sub_px[..., 3] = np.where(changed, text_alpha, alpha_before)
     finally:
         if old_font:
             select_fn(dc, old_font)
@@ -844,7 +852,7 @@ def render_top_center_banner(
     subtitle: str = "",
     role: str = "accent",
     emphasized: bool = False,
-    opacity: float = 0.88,
+    opacity: float = 0.60,
     anchor_y: int | None = None,
     theme: OverlayTheme | None = None,
 ) -> tuple[int, int, int, int]:

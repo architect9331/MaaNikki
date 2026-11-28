@@ -754,46 +754,46 @@ class GameHudOverlay:
 
         if forced_on and forced_reason:
             if ctrl == "return":
-                return ("强制拉回", f"{header_task} · 正在拉回游戏前台", forced_reason, "forced", True, 0.94, focused, True)
-            return ("临时前台", forced_reason, f"当前任务：{header_task} · 阶段完成后自动恢复后台", "forced", True, 0.94, focused, True)
+                return ("强制拉回", f"{header_task} · 正在拉回游戏前台", forced_reason, "forced", True, 0.70, focused, True)
+            return ("临时前台", forced_reason, f"当前任务：{header_task} · 阶段完成后自动恢复后台", "forced", True, 0.70, focused, True)
 
         if flash_reason and now < flash_until:
-            return ("自动拉回", f"{header_task} · 因离开前台被拉回", flash_reason, "forced", True, 0.93, focused, True)
+            return ("自动拉回", f"{header_task} · 因离开前台被拉回", flash_reason, "forced", True, 0.68, focused, True)
 
         if rec_msg and now < rec_until:
-            return ("恢复后台", f"{header_task} · 已恢复后台运行", rec_msg, "recovered", False, 0.90, focused, True)
+            return ("恢复后台", f"{header_task} · 已恢复后台运行", rec_msg, "recovered", False, 0.64, focused, True)
 
         if paused:
-            return ("已暂停", f"{header_task} · 等待切回游戏", pause_reason or "游戏离开前台已自动暂停，切回窗口后自动继续", "paused", False, 0.89, False, True)
+            return ("已暂停", f"{header_task} · 等待切回游戏", pause_reason or "游戏离开前台已自动暂停，切回窗口后自动继续", "paused", False, 0.64, False, True)
 
         if route_on and (route_title or route_sub):
             badge = {"background": "后台跑图", "studio": "路线工具"}.get(ctrl, "自动寻路")
-            return (badge, route_title or header_task, route_sub or step, route_role or "accent", False, 0.88, focused, ctrl == "background")
+            return (badge, route_title or header_task, route_sub or step, route_role or "accent", False, 0.60, focused, ctrl == "background")
 
         if exp_title:
-            return (exp_badge or "探索辅助", exp_title, exp_sub, exp_role or "accent", False, 0.88, focused, False)
+            return (exp_badge or "探索辅助", exp_title, exp_sub, exp_role or "accent", False, 0.60, focused, False)
 
         if mode_setting == "reason_only":
             return None
 
         if ctrl == "background":
-            return ("后台运行", header_task, step or "不抢焦点运行中，遇到需要真实鼠标的阶段会提示切回", "accent", False, 0.87, focused, True)
+            return ("后台运行", header_task, step or "后台不抢焦点运行中", "accent", False, 0.58, focused, True)
 
         if not focused:
             return None
 
         if ctrl == "studio":
-            return ("路线工作台", header_task, step, "accent", False, 0.86, True, True)
+            return ("路线工作台", header_task, step, "accent", False, 0.58, True, True)
 
         if ctrl == "observation":
-            return ("探索辅助", header_task, step or "按截图键或切换目标可自动提示点位", "accent", False, 0.86, True, True)
+            return ("探索辅助", header_task, step or "按截图键或切换目标可自动提示点位", "accent", False, 0.58, True, True)
 
         if mode_setting == "always":
             badge = "自动拉回" if ctrl == "return" else "自动运行"
-            return (badge, header_task, step, "accent", False, 0.86, True, True)
+            return (badge, header_task, step, "accent", False, 0.58, True, True)
 
         compact_title = f"{header_task} · {step}" if step else header_task
-        return ("自动运行", compact_title, "", "accent", False, 0.84, True, True)
+        return ("自动运行", compact_title, "", "accent", False, 0.56, True, True)
 
     def _next_timeout(self, visible: bool, focused: bool = True) -> float:
         now = time.monotonic()
