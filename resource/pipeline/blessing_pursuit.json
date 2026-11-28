@@ -130,7 +130,7 @@
     "action": "Custom",
     "custom_action": "nikki.feature_settings",
     "custom_action_param": {
-      "entrance": [30, 640, 175, 48],
+      "entrance": [22, 654, 172, 44],
       "name": [825, 62, 270, 40],
       "level": [948, 115, 180, 41],
       "xp": [1160, 119, 105, 40],

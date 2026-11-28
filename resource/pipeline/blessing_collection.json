@@ -33,7 +33,7 @@
     "action": "Custom",
     "custom_action": "nikki.ui_click",
     "custom_action_param": {
-      "target": [780, 655],
+      "target": [897, 640],
       "ready": "MaaNikki_Blessing_DecomposeReady",
       "source": "MaaNikki_Blessing_InventoryReady"
     },
