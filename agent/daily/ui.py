@@ -36,6 +36,7 @@ SAFE_AREA_MODAL_ROI = [360, 200, 560, 320]
 _RE_SAFE_AREA_BODY = re.compile(r"是否返回安全[区區]域")
 DISCONNECT_NOTICE_ROI = [360, 220, 560, 300]
 _RE_DISCONNECT_NOTICE_BODY = re.compile(r"返回登[录錄]界面|尝试重新进入游[戏戲]")
+_RE_UPDATE_RESTART_BODY = re.compile(r"更新完成.*(?:请|請)重[启啟啓]|(?:请|請)重[启啟啓]游[戏戲]")
 BLESSING_OVERFLOW_MODAL_ROI = [360, 195, 560, 315]
 _RE_BLESSING_OVERFLOW_TITLE = re.compile(r"祝福[闪閃]光[数數]量溢出")
 _RE_BLESSING_OVERFLOW_BODY = re.compile(r"祝福[闪閃]光[数數]量已超[过過]容量上限")
@@ -148,15 +149,16 @@ def find_safe_area_confirm_box(rows):
     return None
 
 
-def find_disconnect_notice_confirm_box(rows):
-    """Locate the centered Confirm button on a disconnect or relogin prompt modal.
+def _find_disconnect_notice_detail(rows):
+    """Locate the centered Confirm button on a disconnect, relogin, or hotfix-restart modal.
 
     Requires all three geometric and semantic anchors together:
-    - Prompt body matching disconnect/relogin text (y in [240, 410], x in [380, 900])
+    - Prompt body matching disconnect/relogin or update-restart text
+      (y in [240, 410], x in [380, 900])
     - Centered single "确认" button (y in [415, 510], x in [525, 755])
     - No sibling "取消" button (y in [415, 510], x in [380, 900])
     """
-    has_body = False
+    kind = None
     has_cancel = False
     confirm_box = None
     for row in rows or ():
@@ -173,16 +175,25 @@ def find_disconnect_notice_confirm_box(rows):
             continue
         bx, by, bw, bh = int(box[0]), int(box[1]), int(box[2]), int(box[3])
         cx, cy = bx + bw * 0.5, by + bh * 0.5
-        if 240 <= cy <= 410 and 380 <= cx <= 900 and _RE_DISCONNECT_NOTICE_BODY.search(clean):
-            has_body = True
+        if 240 <= cy <= 410 and 380 <= cx <= 900:
+            if _RE_DISCONNECT_NOTICE_BODY.search(clean):
+                kind = "disconnect"
+            elif kind is None and _RE_UPDATE_RESTART_BODY.search(clean):
+                kind = "update_restart"
         if 415 <= cy <= 510:
             if 380 <= cx <= 900 and _RE_NOTICE_CANCEL.search(clean):
                 has_cancel = True
             if 525 <= cx <= 755 and confirm_box is None and _RE_NOTICE_CONFIRM.search(clean):
                 confirm_box = [bx, by, bw, bh]
-    if has_body and confirm_box is not None and not has_cancel:
-        return confirm_box
-    return None
+    if kind is not None and confirm_box is not None and not has_cancel:
+        return confirm_box, kind
+    return None, None
+
+
+def find_disconnect_notice_confirm_box(rows):
+    """Locate the centered Confirm button on a disconnect, relogin, or hotfix-restart modal."""
+    box, _ = _find_disconnect_notice_detail(rows)
+    return box
 
 
 def find_blessing_overflow_cancel_box(rows):
@@ -346,6 +357,7 @@ class GameUI:
         self._dismissing_decompose_tutorial = False
         self._dismissing_blessing_overflow = False
         self._dismissing_missing_resource = False
+        self._last_disconnect_kind = "disconnect"
         self._asset_definitions = self._asset_paths = None
         self._tutorial = None
         self.monthly_paradise_unavailable = False
@@ -858,9 +870,14 @@ class GameUI:
         return find_safe_area_confirm_box(rows) if rows is not None else None
 
     def disconnect_notice_box(self, *, frame=None):
-        """Return the Confirm button box of a disconnect or relogin modal, if visible."""
+        """Return the Confirm button box of a disconnect, relogin, or hotfix-restart modal."""
         rows = self._modal_ocr_rows(DISCONNECT_NOTICE_ROI, frame=frame)
-        return find_disconnect_notice_confirm_box(rows) if rows is not None else None
+        if rows is None:
+            return None
+        box, kind = _find_disconnect_notice_detail(rows)
+        if box is not None and kind is not None:
+            self._last_disconnect_kind = kind
+        return box
 
     def blessing_overflow_cancel_box(self, *, frame=None):
         """Return the Cancel button box of the Eureka overflow warning modal, if visible."""
@@ -949,14 +966,17 @@ class GameUI:
             self._dismissing_blessing_overflow = False
 
     def abort_on_disconnect(self):
-        """Stop the task queue cleanly when a disconnect or relogin modal appears."""
+        """Stop the task queue cleanly when a disconnect, relogin, or hotfix-restart modal appears."""
         from task_control import TaskStopped, active_session
         if self.rt.navigation_inputs:
             self.rt.navigation_inputs.release()
+        if self._last_disconnect_kind == "update_restart":
+            message = "检测到游戏热更新重启提示，后续任务已停止。请重启游戏后再运行。"
+        else:
+            message = "检测到游戏断线或需要重新登录提示，后续任务已停止。请重新进入游戏后再运行。"
         session = active_session()
         if session is not None:
-            session.game_disconnected()
-        message = "检测到游戏断线或需要重新登录提示，后续任务已停止。请重新进入游戏后再运行。"
+            session.game_disconnected(message=message)
         self.rt.diagnostic("game_disconnected", message)
         self.rt.log(message)
         try:

@@ -304,11 +304,11 @@ class ForegroundSession:
             details=details,
         )
 
-    def game_disconnected(self):
-        """Stop the queue when the game shows a disconnect or relogin prompt modal."""
+    def game_disconnected(self, *, message=None):
+        """Stop the queue when the game shows a disconnect, relogin, or hotfix-restart modal."""
         self._stop_queue_with_failure(
             "game_disconnected",
-            "检测到游戏断线或需要重新登录提示，后续任务已停止。请重新进入游戏后再运行。",
+            message or "检测到游戏断线或需要重新登录提示，后续任务已停止。请重新进入游戏后再运行。",
         )
 
     @contextmanager
