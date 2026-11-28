@@ -27,6 +27,7 @@ import type { QueueGoalEstimate } from '@/services/realmForecast';
 import { collectionKey, collectionSlots, getBlessingProgress } from '@/utils/blessingProgress';
 import { RENEWAL_SCOPE_OPTIONS } from '@/services/scoring/dominance';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
+import { regionSummaryBadge } from '@/services/collectionRegions';
 import { getInterfaceLangKey } from '@/i18n';
 import {
   DEFAULT_REALM_OPTION_KEYS,
@@ -464,8 +465,13 @@ export function RealmQueueCard({
   const fallbackName = FALLBACK_LABELS[fallback] ?? fallback;
   const fallbackTitle = targetShort ? `默认副本 · ${fallbackName}（${targetShort}）` : `默认副本 · ${fallbackName}`;
 
-  const { renewal, crafting, queueSummary, glowComputing } = useRealmForecast({ optionValues: values });
+  const { renewal, crafting, blessing, queueSummary, glowComputing } = useRealmForecast({ optionValues: values });
+  const materials = useWardrobePlanStore((state) => state.materials);
   const modeLabelOf = (m: string) => (m === 'power' ? '战力' : m === 'selected' ? '自选' : '全收集');
+  const renewalRegionBadge = regionSummaryBadge(materials.renewal_regions, renewal.mode);
+  const craftingRegionBadge = regionSummaryBadge(materials.crafting_regions, crafting.mode);
+  const blessingRegionBadge = regionSummaryBadge(materials.blessing_regions, blessing.planMode);
+  const glowDetailWithRegion = blessingRegionBadge ? `${blessingRegionBadge}｜${glowDetail}` : glowDetail;
   const renewalScopeLabel =
     RENEWAL_SCOPE_OPTIONS.find((item) => item.id === (renewal.renewalScope ?? 'all'))?.label ?? '全部星级';
   const renewalDetail =
@@ -477,6 +483,7 @@ export function RealmQueueCard({
             : renewal.mode === 'selected'
               ? '自选'
               : `${modeLabelOf(renewal.mode)}·${renewalScopeLabel}`,
+          renewalRegionBadge,
           (renewal.priorityPendingCount ?? 0) > 0 ? `搭配优先 ${renewal.priorityPendingCount} 件` : null,
           renewal.nextTarget
             ? `下轮：${renewal.nextTarget.name}（${renewal.nextTarget.sourceLabel}）`
@@ -491,6 +498,7 @@ export function RealmQueueCard({
           crafting.mode === 'selected'
             ? '自选'
             : `${modeLabelOf(crafting.mode)}·${crafting.scope === 'suits' ? '仅成套' : '全部设计图'}`,
+          craftingRegionBadge,
           crafting.nextTarget
             ? `下轮：${crafting.nextTarget.name}（${crafting.nextTarget.sourceLabel}）`
             : crafting.energy === 0 && crafting.allTrackedEnergy > 0
@@ -565,7 +573,7 @@ export function RealmQueueCard({
                     entry.goal === 'weekly'
                       ? weeklyDetail
                       : entry.goal === 'glow'
-                        ? glowDetail
+                        ? glowDetailWithRegion
                         : entry.goal === 'renewal'
                           ? renewalDetail
                           : entry.goal === 'crafting'

@@ -46,6 +46,8 @@ export interface ForecastInput {
   capacity: number;
   capacityLimit: number;
   decompose: boolean;
+  /** Optional realm source -> 0-based region priority rank (lower is farmed first). */
+  sourcePriority?: Record<string, number>;
   schedule?: ForecastSchedule;
 }
 
@@ -244,13 +246,18 @@ function trial(input: ForecastInput, seed: number) {
         energySpent += runs * ENERGY_PER_RUN;
       } else {
         let source = '';
+        let bestRank = Number.POSITIVE_INFINITY;
         let value = -1;
+        const sourcePriority = input.sourcePriority;
         const effectiveChance = (index: number) =>
           parts[index].kindOnly && (!open(index) || queue.includes(index)) ? 0 : chance(index);
         for (const [name, indices] of sources) {
           const expected = indices.reduce((sum, index) => sum + effectiveChance(index), 0);
-          if (expected > value) {
+          if (expected <= 0) continue;
+          const rank = sourcePriority ? (sourcePriority[name] ?? 99) : 0;
+          if (rank < bestRank || (rank === bestRank && expected > value)) {
             source = name;
+            bestRank = rank;
             value = expected;
           }
         }

@@ -1,3 +1,5 @@
+import type { RegionFilterConfig } from '../collectionRegions';
+
 export const ATTRIBUTES = ['典雅', '清新', '甜美', '性感', '帅气'];
 export const HEART_GROUPS = ['发型', '外套', '衣服', '袜子', '鞋子', '饰品'];
 
@@ -183,9 +185,12 @@ export interface MaterialsState {
   crafted_consumed?: Record<string, number>;
   crafting_scope?: 'all' | 'suits';
   crafting_plan?: CraftingPlanState | null;
+  crafting_regions?: RegionFilterConfig | null;
   renewal_scope?: RenewalScope;
   renewal_plan?: RenewalPlanState | null;
+  renewal_regions?: RegionFilterConfig | null;
   blessing_plan?: BlessingPlanState | null;
+  blessing_regions?: RegionFilterConfig | null;
   renewal_baseline_key?: string;
   renewal_consumed?: Record<string, number>;
   glow_plan?: GlowPlanState | null;

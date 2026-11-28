@@ -1,5 +1,6 @@
 import { upgradeCost } from './math';
 import type { RealmMaterialTarget } from './heartPresets';
+import { curveRegion, type CollectionRegion } from '../collectionRegions';
 import type { CraftingCatalog, CraftingMaterialMeta, CraftingSketch, MaterialsState, OwnedProfile, ScoringCatalog } from './types';
 
 /** Daily active energy used as fallback when no shared assumption is supplied. */
@@ -11,8 +12,8 @@ export type MaterialGroup = 'crystal' | 'jihua' | 'vortex' | 'chroma' | 'misi' |
 export const MATERIAL_GROUP_LABELS: Record<MaterialGroup, string> = {
   crystal: '魔物试炼 · 制衣晶石',
   jihua: '素材激化 · 泡泡 / 丝线 / 噗灵',
-  vortex: '魔物试炼 · 涡影泡泡（1.0）',
-  chroma: '魔物试炼 · 幻彩泡泡（2.0）',
+  chroma: '魔物试炼 · 幻彩泡泡（1.0）',
+  vortex: '魔物试炼 · 涡影泡泡（2.0）',
   misi: '魔物试炼 · 弥思泡泡（3.0）',
   world: '大世界采集物',
 };
@@ -109,6 +110,8 @@ export interface RenewalGroup {
   /** Whether level 11 costs extra materials beyond full level. */
   renewable: boolean;
   suitName?: string;
+  /** Game region inferred from the item's monster_glow bubble curve. */
+  region: CollectionRegion | null;
 }
 
 /** Owned clothing groups that share one growth level. */
@@ -127,7 +130,8 @@ export function buildRenewalGroups(catalog: ScoringCatalog, profile: OwnedProfil
       && Object.keys(upgradeCost(catalog, item, MAX_LEVEL, RENEWED_LEVEL)).length > 0;
     rows.push({ id: group.id, scoreId, name: group.name, part: (group.part ?? '').split(' / ').pop() ?? '',
       quality: item.quality, level: group.level, inferred: !!group.inferred, renewable,
-      suitName: suitByItem.get(Number(scoreId)) });
+      suitName: suitByItem.get(Number(scoreId)),
+      region: curveRegion(catalog, item.curve) });
   }
   return rows.sort((a, b) => b.quality - a.quality || (a.suitName ?? '~').localeCompare(b.suitName ?? '~', 'zh-CN')
     || a.name.localeCompare(b.name, 'zh-CN'));
@@ -173,7 +177,7 @@ const JIHUA_TIEBREAK: Record<string, number> = {
 
 /**
  * Rank farmable deficits in the exact order executed by agent material_pursuit:
- * Tier 0 (搭配计算优先) before Tier 1, non-bling before bling, larger energy deficit first.
+ * Tier 0 (搭配计算优先) before region/base tiers, non-bling before bling, larger energy deficit first.
  */
 export function rankFarmableDeficits(
   required: Record<string, number>,
@@ -181,9 +185,11 @@ export function rankFarmableDeficits(
   crafting: CraftingCatalog | null | undefined,
   inventory: Record<string, number>,
   realmFilter?: 'monster' | 'jihua',
+  orderedTiers?: Record<string, number>[],
 ): FarmablePriorityItem[] {
   const matDefs = crafting?.materials ?? {};
   const list: { sortKey: [number, number, number, number]; item: FarmablePriorityItem }[] = [];
+  const baseTiers = orderedTiers && orderedTiers.length > 0 ? orderedTiers : [required];
 
   for (const [id, rawNeed] of Object.entries(required)) {
     const need = Math.max(0, Math.round(Number(rawNeed) || 0));
@@ -196,8 +202,21 @@ export function rankFarmableDeficits(
     if (totalMissing <= 0) continue;
     const prioNeed = Math.max(0, Math.round(Number(priorityRequired[id] ?? 0) || 0));
     const prioMissing = Math.max(0, prioNeed - owned);
-    const effDeficit = prioMissing > 0 ? prioMissing : totalMissing;
-    const tierNum = prioMissing > 0 ? 0 : 1;
+    let tierNum = 0;
+    let effDeficit = prioMissing;
+    if (prioMissing <= 0) {
+      tierNum = baseTiers.length + 1;
+      effDeficit = totalMissing;
+      for (let idx = 0; idx < baseTiers.length; idx++) {
+        const tierNeed = Math.max(0, Math.round(Number(baseTiers[idx][id] ?? 0) || 0));
+        const tierMissing = tierNeed - owned;
+        if (tierMissing > 0) {
+          tierNum = idx + 1;
+          effDeficit = tierMissing;
+          break;
+        }
+      }
+    }
     const isBling = id === BLING_ID;
     const drop = Math.max(1, meta.drop ?? 1);
     const perEnergy = Math.max(1, meta.energy ?? 40);

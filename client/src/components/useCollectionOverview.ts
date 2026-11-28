@@ -10,6 +10,12 @@ import {
 import { buildRenewalGroups, MAX_LEVEL, RENEWED_LEVEL } from '@/services/scoring/materialPlanning';
 import { buildSuitEntries } from '@/services/scoring/wardrobeBrowserData';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
+import {
+  blessingSourceRegion,
+  isAllRegionsEnabled,
+  normalizeRegionConfig,
+  sketchRegion,
+} from '@/services/collectionRegions';
 import bagCatalogRaw from '@/data/bagCatalog.json';
 import { collectionKey, collectionSlots, getBlessingProgress } from '@/utils/blessingProgress';
 
@@ -42,7 +48,18 @@ export function useCollectionOverview(): Record<'closet' | 'crafting' | 'renewal
     const sketches = payload?.crafting_catalog?.sketches;
     if (!sketches || !profile || !payload) return null;
     const owned = new Set(profile.items.map((item) => item.id));
-    const scoped = sketches.filter((sketch) => scope === 'all' || sketch.category === 'suit');
+    const regionCfg = normalizeRegionConfig(materials.crafting_regions);
+    const enabledRegions = new Set(regionCfg.enabled);
+    const allRegions = isAllRegionsEnabled(regionCfg);
+    const matDefs = payload.crafting_catalog?.materials;
+    const scoped = sketches.filter((sketch) => {
+      if (scope !== 'all' && sketch.category !== 'suit') return false;
+      if (craftingMode !== 'selected' && !allRegions) {
+        const reg = sketchRegion(sketch, matDefs);
+        if (!reg || !enabledRegions.has(reg)) return false;
+      }
+      return true;
+    });
     if (craftingMode === 'power' && scope !== 'suits') {
       const dominated = findDominatedStandaloneItems(
         payload.catalog,
@@ -53,10 +70,13 @@ export function useCollectionOverview(): Record<'closet' | 'crafting' | 'renewal
       return { done: active.filter((sketch) => owned.has(sketch.id)).length, total: active.length };
     }
     return { done: scoped.filter((sketch) => owned.has(sketch.id)).length, total: scoped.length };
-  }, [payload, profile, scope, craftingMode]);
+  }, [payload, profile, scope, craftingMode, materials.crafting_regions]);
   const renewal = useMemo(() => {
     if (!payload || !profile) return null;
     const groups = buildRenewalGroups(payload.catalog, profile);
+    const regionCfg = normalizeRegionConfig(materials.renewal_regions);
+    const enabledRegions = new Set(regionCfg.enabled);
+    const allRegions = isAllRegionsEnabled(regionCfg);
     const ownedScoreIds =
       renewalMode === 'power' ? new Set(groups.map((group) => group.scoreId)) : null;
     const dominated =
@@ -69,18 +89,29 @@ export function useCollectionOverview(): Record<'closet' | 'crafting' | 'renewal
         : groups.filter(
             (group) =>
               !(renewalMode === 'power' && dominated?.has(group.scoreId)) &&
-              matchesRenewalScope(group.quality, Boolean(group.suitName), renewalScope),
+              matchesRenewalScope(group.quality, Boolean(group.suitName), renewalScope) &&
+              (allRegions || (group.region !== null && enabledRegions.has(group.region))),
           );
     return {
       done: active.filter((group) => (group.level ?? 0) >= (group.renewable ? RENEWED_LEVEL : MAX_LEVEL)).length,
       total: active.length,
     };
-  }, [payload, profile, renewalMode, renewalScope]);
+  }, [payload, profile, renewalMode, renewalScope, materials.renewal_regions]);
   const blessing = useMemo(() => {
     const progress = getBlessingProgress(account);
     if (!progress.known) return null;
+    const regionCfg = normalizeRegionConfig(materials.blessing_regions);
+    const enabledRegions = new Set(regionCfg.enabled);
+    const allRegions = isAllRegionsEnabled(regionCfg);
+    const activeSets =
+      blessingMode === 'selected' || allRegions
+        ? progress.sets
+        : progress.sets.filter((set) => {
+            const reg = blessingSourceRegion(set.source);
+            return reg !== null && enabledRegions.has(reg);
+          });
     if (blessingMode === 'power') {
-      const done = progress.sets.reduce(
+      const done = activeSets.reduce(
         (sum, set) =>
           sum +
           collectionSlots.filter((slot) =>
@@ -88,10 +119,21 @@ export function useCollectionOverview(): Record<'closet' | 'crafting' | 'renewal
           ).length,
         0,
       );
-      return { done, total: progress.sets.length * collectionSlots.length };
+      return { done, total: activeSets.length * collectionSlots.length };
     }
-    return { done: progress.owned.size, total: progress.target };
-  }, [account, blessingMode]);
+    const done = activeSets.reduce(
+      (sum, set) =>
+        sum +
+        collectionSlots.reduce(
+          (slotSum, slot) =>
+            slotSum + set.colors.filter((color) => progress.owned.has(collectionKey({ name: set.name, slot, color }))).length,
+          0,
+        ),
+      0,
+    );
+    const total = activeSets.reduce((sum, set) => sum + set.colors.length * collectionSlots.length, 0);
+    return { done, total };
+  }, [account, blessingMode, materials.blessing_regions]);
   const backpack = useMemo(() => {
     const inv = materials.inventory ?? {};
     const keys = Object.keys(inv);

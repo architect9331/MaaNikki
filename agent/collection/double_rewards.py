@@ -12,7 +12,14 @@ import numpy as np
 
 from account_state import AccountState, period_key
 from adventure_report import try_record_adventure_entry
-from action.blessing_pursuit import ORGANIZE_OPTIONS, blessing_focus, blessing_mode, glow_shortfall, organization_issue
+from action.blessing_pursuit import (
+    ORGANIZE_OPTIONS,
+    blessing_focus,
+    blessing_mode,
+    blessing_region_order,
+    glow_shortfall,
+    organization_issue,
+)
 from action.weekly_challenge import TARGETS as WEEKLY_TARGETS, _record_weekly_state, read_count as read_weekly_count
 from collection.backpack import ensure_backpack_scanned, renewal_source, wardrobe_snapshot
 from collection.inventory_workflow import FiveStarInventory
@@ -359,9 +366,10 @@ def run_shared_bless_collection(
             farm_only=farm_only,
             skip_prefix_scan=skip_prefix_scan,
             reserve_bling=pursuit.reserve_bling,
-            focus_sets=blessing_focus(role_state),
+            focus_sets=blessing_focus(role_state, catalog),
             power_mode=(blessing_mode(role_state) == "power"),
             max_farm_runs=max_runs,
+            region_order=blessing_region_order(role_state),
         )
         if full_workflow:
             if flow.target_complete():

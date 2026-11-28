@@ -22,6 +22,15 @@ from .backpack import (
     wardrobe_snapshot_key,
 )
 from .dominance import strictly_dominated_standalone_ids
+from .regions import (
+    active_region_order,
+    curve_region,
+    is_all_regions_enabled,
+    material_region,
+    normalize_region_config,
+    region_rank,
+    sketch_region,
+)
 
 
 def load_catalogs():
@@ -75,7 +84,36 @@ def matches_renewal_scope(quality: int, in_suit: bool, scope: str) -> bool:
     return True
 
 
-def compute_crafting_requirements(role: dict, crafting: dict, scoring: dict) -> dict[str, int]:
+def _build_cumulative_region_tiers(
+    totals: dict[str, int],
+    by_region: dict[str, dict[str, int]],
+    order: list[str] | None,
+) -> list[dict[str, int]]:
+    """Convert per-region requirements into cumulative priority tiers clamped to ``totals``."""
+    if not order:
+        return [dict(totals)]
+    tiers: list[dict[str, int]] = []
+    running: dict[str, int] = {}
+    for reg in order:
+        reg_req = by_region.get(reg) or {}
+        for mid, cnt in reg_req.items():
+            running[mid] = running.get(mid, 0) + cnt
+        clamped = {
+            mid: min(cnt, totals.get(mid, 0))
+            for mid, cnt in running.items()
+            if min(cnt, totals.get(mid, 0)) > 0
+        }
+        tiers.append(clamped)
+    tiers.append(dict(totals))
+    return tiers
+
+
+def compute_crafting_requirements_tiered(
+    role: dict,
+    crafting: dict,
+    scoring: dict,
+) -> tuple[dict[str, int], list[dict[str, int]]]:
+    """Return ``(totals, cumulative_tiers)`` for crafting with region filter & priority."""
     owned = owned_score_ids(role, scoring)
     materials_state = role.get("materials") or {}
     plan = materials_state.get("crafting_plan")
@@ -83,6 +121,10 @@ def compute_crafting_requirements(role: dict, crafting: dict, scoring: dict) -> 
     selected = mode == "selected"
     picked = {str(sid) for sid in (plan.get("sketch_ids") or [])} if selected else set()
     scope = materials_state.get("crafting_scope", "all")
+    region_cfg = normalize_region_config(materials_state.get("crafting_regions"))
+    enabled_regions = set(region_cfg["enabled"])
+    all_regions = is_all_regions_enabled(region_cfg)
+    mat_defs = crafting.get("materials") or {}
     sketches = crafting.get("sketches") or []
     dominated: set[str] = set()
     if mode == "power" and scope != "suits":
@@ -90,10 +132,12 @@ def compute_crafting_requirements(role: dict, crafting: dict, scoring: dict) -> 
         uncrafted = [str(sk["id"]) for sk in sketches if str(sk["id"]) not in owned]
         dominated = strictly_dominated_standalone_ids(scoring, uncrafted, available)
     totals: dict[str, int] = {}
+    by_region: dict[str, dict[str, int]] = {}
     for sketch in sketches:
         sid = str(sketch["id"])
         if sid in owned:
             continue
+        reg = sketch_region(sketch, mat_defs)
         if selected:
             if sid not in picked:
                 continue
@@ -102,8 +146,14 @@ def compute_crafting_requirements(role: dict, crafting: dict, scoring: dict) -> 
                 continue
             if mode == "power" and sid in dominated:
                 continue
+            if not all_regions and reg not in enabled_regions:
+                continue
+        bucket = by_region.setdefault(reg or "_other", {})
         for mid, cnt in (sketch.get("costs") or {}).items():
-            totals[str(mid)] = totals.get(str(mid), 0) + int(cnt)
+            key = str(mid)
+            amount = int(cnt)
+            totals[key] = totals.get(key, 0) + amount
+            bucket[key] = bucket.get(key, 0) + amount
     # Crafting between two wardrobe reads is only known as an account-wide total,
     # so it can only be deducted from non-selected plans.
     wb_key = wardrobe_snapshot_key(role)
@@ -112,7 +162,12 @@ def compute_crafting_requirements(role: dict, crafting: dict, scoring: dict) -> 
         for mid, used in consumed.items():
             if str(mid) in totals and int(used) > 0:
                 totals[str(mid)] = max(0, totals[str(mid)] - int(used))
-    return totals
+    tiers = _build_cumulative_region_tiers(totals, by_region, active_region_order(region_cfg))
+    return totals, tiers
+
+
+def compute_crafting_requirements(role: dict, crafting: dict, scoring: dict) -> dict[str, int]:
+    return compute_crafting_requirements_tiered(role, crafting, scoring)[0]
 
 
 MAX_LEVEL = 10
@@ -165,6 +220,7 @@ def renewal_groups(role: dict, scoring: dict) -> list[dict]:
             group["score_id"] = group["score_id"] or str(entry["score_id"])
             group["reward"] = group["reward"] or bool(entry.get("glow_reward"))
     suit_item_ids = {str(iid) for suit in (scoring.get("suits") or []) for iid in (suit.get("items") or [])}
+    material_names = scoring.get("material_names") or {}
     result = []
     for group in groups.values():
         item = items.get(group["score_id"] or "")
@@ -182,16 +238,23 @@ def renewal_groups(role: dict, scoring: dict) -> list[dict]:
             "curve": curve,
             "level": level,
             "renewable": renewable,
+            "region": curve_region(curve, material_names),
         })
     return result
 
 
-def compute_renewal_requirements_tiered(role: dict, scoring: dict) -> tuple[dict[str, int], dict[str, int]]:
-    """Return (all_planned_totals, priority_targets_totals) after subtracting consumption."""
+def compute_renewal_requirement_tiers(
+    role: dict,
+    scoring: dict,
+) -> tuple[dict[str, int], dict[str, int], list[dict[str, int]]]:
+    """Return ``(totals, priority_totals, ordered_tiers)`` after subtracting consumption."""
     mats = role.get("materials") or {}
     plan = mats.get("renewal_plan") or {}
     mode = plan_mode(plan)
     scope = normalize_renewal_scope(mats.get("renewal_scope"))
+    region_cfg = normalize_region_config(mats.get("renewal_regions"))
+    enabled_regions = set(region_cfg["enabled"])
+    all_regions = is_all_regions_enabled(region_cfg)
     selected = mode == "selected"
     targets = plan.get("targets") or {}
     priority_targets = plan.get("priority_targets") or {}
@@ -202,6 +265,7 @@ def compute_renewal_requirements_tiered(role: dict, scoring: dict) -> tuple[dict
         dominated = strictly_dominated_standalone_ids(scoring, owned_score, owned_score)
     totals: dict[str, int] = {}
     priority: dict[str, int] = {}
+    by_region: dict[str, dict[str, int]] = {}
     for group in groups:
         top = RENEWED_LEVEL if group["renewable"] else MAX_LEVEL
         base_target: int | None = None
@@ -210,8 +274,10 @@ def compute_renewal_requirements_tiered(role: dict, scoring: dict) -> tuple[dict
             if wanted in (MAX_LEVEL, RENEWED_LEVEL):
                 base_target = min(int(wanted), top)
         else:
-            if not (mode == "power" and group["score_id"] in dominated) and matches_renewal_scope(
-                group["quality"], group["in_suit"], scope
+            if (
+                not (mode == "power" and group["score_id"] in dominated)
+                and matches_renewal_scope(group["quality"], group["in_suit"], scope)
+                and (all_regions or group.get("region") in enabled_regions)
             ):
                 base_target = top
         prio_wanted = priority_targets.get(group["id"])
@@ -221,8 +287,10 @@ def compute_renewal_requirements_tiered(role: dict, scoring: dict) -> tuple[dict
         effective_target = max(base_target or 0, p_target or 0)
         if effective_target <= 0:
             continue
+        bucket = by_region.setdefault(group.get("region") or "_other", {})
         for mid, cnt in level_cost(group["curve"], group["level"], effective_target).items():
             totals[mid] = totals.get(mid, 0) + cnt
+            bucket[mid] = bucket.get(mid, 0) + cnt
         if p_target is not None and p_target > 0:
             for mid, cnt in level_cost(group["curve"], group["level"], p_target).items():
                 priority[mid] = priority.get(mid, 0) + cnt
@@ -237,6 +305,13 @@ def compute_renewal_requirements_tiered(role: dict, scoring: dict) -> tuple[dict
             priority[mid] = capped
         else:
             del priority[mid]
+    region_tiers = _build_cumulative_region_tiers(totals, by_region, active_region_order(region_cfg))
+    return totals, priority, [priority, *region_tiers]
+
+
+def compute_renewal_requirements_tiered(role: dict, scoring: dict) -> tuple[dict[str, int], dict[str, int]]:
+    """Return (all_planned_totals, priority_targets_totals) after subtracting consumption."""
+    totals, priority, _ = compute_renewal_requirement_tiers(role, scoring)
     return totals, priority
 
 
@@ -499,6 +574,98 @@ def goal_has_monster_potential(
     return has_realm_material_potential(goal, role, crafting, scoring, realm="monster")
 
 
+def _filter_req_map(req: dict[str, int], allowed_mids: set[str]) -> dict[str, int]:
+    return {str(mid): int(cnt) for mid, cnt in req.items() if str(mid) in allowed_mids and int(cnt) > 0}
+
+
+def _goal_requirement_tiers(
+    goal: str,
+    role: dict,
+    crafting: dict,
+    scoring: dict,
+    *,
+    realm_filter: str | None = None,
+) -> tuple[dict[str, int], list[dict[str, int]]]:
+    """Return ``(totals, ordered_tiers)`` for ``goal`` optionally scoped to ``realm_filter``."""
+    mat_defs = crafting.get("materials") or {}
+    mats = role.get("materials") or {}
+    if goal == "crafting":
+        if not wardrobe_snapshot(role):
+            return {}, []
+        raw_totals, raw_tiers = compute_crafting_requirements_tiered(role, crafting, scoring)
+        if realm_filter == "jihua":
+            allowed = {
+                str(mid)
+                for mid, cnt in raw_totals.items()
+                if int(cnt) > 0
+                and (mat_defs.get(str(mid)) or {}).get("realm") == "jihua"
+                and (mat_defs.get(str(mid)) or {}).get("level")
+            }
+        else:
+            allowed = {
+                str(mid)
+                for mid, cnt in raw_totals.items()
+                if int(cnt) > 0
+                and (mat_defs.get(str(mid)) or {}).get("kind") == "monster_craft"
+            }
+        return _filter_req_map(raw_totals, allowed), [_filter_req_map(t, allowed) for t in raw_tiers]
+
+    if goal == "renewal":
+        if renewal_source(mats) == "targets":
+            glow_plan = mats.get("glow_plan") or {}
+            if glow_plan.get("completed") or glow_plan.get("enabled") is False:
+                return {}, []
+            raw_totals = {
+                str(mid): int(value)
+                for mid, value in (glow_plan.get("targets") or {}).items()
+                if int(value) > 0
+            }
+            if realm_filter == "jihua":
+                allowed = {
+                    mid
+                    for mid in raw_totals
+                    if (mat_defs.get(mid) or {}).get("realm") == "jihua"
+                    and (mat_defs.get(mid) or {}).get("level")
+                }
+                raw_totals = _filter_req_map(raw_totals, allowed)
+            region_cfg = normalize_region_config(mats.get("renewal_regions"))
+            order = active_region_order(region_cfg)
+            if order:
+                by_region: dict[str, dict[str, int]] = {}
+                for mid, cnt in raw_totals.items():
+                    reg = material_region(mat_defs.get(mid)) or "_other"
+                    by_region.setdefault(reg, {})[mid] = cnt
+                tiers = _build_cumulative_region_tiers(raw_totals, by_region, order)
+            else:
+                tiers = [dict(raw_totals)]
+            return raw_totals, tiers
+
+        if not wardrobe_snapshot(role):
+            return {}, []
+        raw_totals, _, raw_tiers = compute_renewal_requirement_tiers(role, scoring)
+        if realm_filter == "jihua":
+            allowed = {
+                str(mid)
+                for mid, cnt in raw_totals.items()
+                if int(cnt) > 0
+                and (mat_defs.get(str(mid)) or {}).get("realm") == "jihua"
+                and (mat_defs.get(str(mid)) or {}).get("level")
+            }
+            return _filter_req_map(raw_totals, allowed), [_filter_req_map(t, allowed) for t in raw_tiers]
+        return raw_totals, raw_tiers
+
+    return {}, []
+
+
+def _first_unmet_tier(mid: str, owned: int, total_need: int, tiers: list[dict[str, int]]) -> tuple[int, int]:
+    """Return ``(tier_index, effective_deficit)`` for the earliest tier with unmet need."""
+    for idx, tier_req in enumerate(tiers):
+        deficit = int(tier_req.get(mid, 0)) - owned
+        if deficit > 0:
+            return idx, deficit
+    return len(tiers), max(0, int(total_need) - owned)
+
+
 def jihua_goal_deficits(
     goal: str,
     role: dict,
@@ -508,10 +675,10 @@ def jihua_goal_deficits(
     *,
     multiplier: int = 2,
 ) -> list[tuple]:
-    """Jihua shortfalls: priority tier first, bubbles & thread by larger deficit before bling."""
+    """Jihua shortfalls: priority & region tiers first, bubbles & thread before bling."""
     mat_defs = crafting.get("materials") or {}
     scale = max(1, int(multiplier))
-    total_reqs, prio_reqs = _jihua_requirements(goal, role, crafting, scoring)
+    total_reqs, tiers = _goal_requirement_tiers(goal, role, crafting, scoring, realm_filter="jihua")
     items = []
     for mid, need in total_reqs.items():
         meta = mat_defs.get(mid) or {}
@@ -522,9 +689,7 @@ def jihua_goal_deficits(
         owned = int(inventory.get(mid, 0))
         deficit = int(need) - owned
         if deficit > 0:
-            prio_deficit = max(0, int(prio_reqs.get(mid, 0)) - owned)
-            eff_deficit = prio_deficit if prio_deficit > 0 else deficit
-            tier = 0 if prio_deficit > 0 else 1
+            tier, eff_deficit = _first_unmet_tier(mid, owned, int(need), tiers)
             is_bling = 1 if mid == BLING_ID else 0
             runs_needed = math.ceil(eff_deficit / (base_drop * scale))
             tiebreak = _JIHUA_TIEBREAK.get(mid, 9)
@@ -540,20 +705,18 @@ def goal_deficits(
     crafting: dict,
     scoring: dict,
 ) -> list[tuple]:
-    """Farmable shortfalls: priority tier first, bubbles/crystals/thread by energy gap before bling."""
+    """Farmable shortfalls: priority & region tiers first, bubbles/crystals/thread before bling."""
     mat_defs = crafting.get("materials") or {}
-    prio_reqs = goal_priority_requirements(goal, role, crafting, scoring)
+    total_reqs, tiers = _goal_requirement_tiers(goal, role, crafting, scoring)
     items = []
-    for mid, need in goal_requirements(goal, role, crafting, scoring).items():
+    for mid, need in total_reqs.items():
         meta = mat_defs.get(str(mid))
         if not meta or not meta.get("realm") or not meta.get("level"):
             continue
         owned = int(inventory.get(str(mid), 0))
         deficit = int(need) - owned
         if deficit > 0:
-            prio_deficit = max(0, int(prio_reqs.get(str(mid), 0)) - owned)
-            eff_deficit = prio_deficit if prio_deficit > 0 else deficit
-            tier = 0 if prio_deficit > 0 else 1
+            tier, eff_deficit = _first_unmet_tier(str(mid), owned, int(need), tiers)
             is_bling = 1 if str(mid) == BLING_ID else 0
             base_drop = max(1, int(meta.get("drop") or 1))
             per_energy = max(1, int(meta.get("energy") or 40))

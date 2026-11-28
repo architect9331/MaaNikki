@@ -42,7 +42,7 @@ function QueueChain({ goal }: { goal: RealmGoal }) {
 }
 
 export function PlanPanel({ tone = 'ok', basis, actions, goal, mode, onModeChange, modeDetail, selectDisabledReason,
-  scopeRow, queueStatus, queueHint, advice }: {
+  scopeRow, regionRow, queueStatus, queueHint, advice }: {
   tone?: keyof typeof TONE_DOT;
   /** What this plan is calculated from, and how fresh that is. */
   basis: ReactNode;
@@ -56,6 +56,8 @@ export function PlanPanel({ tone = 'ok', basis, actions, goal, mode, onModeChang
   selectDisabledReason?: string;
   /** Optional secondary stage/scope row (shown beneath 收集范围). */
   scopeRow?: { label: string; content: ReactNode };
+  /** Optional region filter & priority row (shown beneath 阶段范围). */
+  regionRow?: { label?: string; content: ReactNode };
   queueStatus: ReactNode;
   queueHint?: ReactNode;
   advice?: { label?: string; title: ReactNode; detail?: ReactNode; warn?: boolean };
@@ -75,6 +77,7 @@ export function PlanPanel({ tone = 'ok', basis, actions, goal, mode, onModeChang
       <span className="min-w-40 flex-1 text-xs leading-5 text-text-secondary">{selectDisabledReason && mode === 'all' ? `${selectDisabledReason} ` : ''}{modeDetail}</span>
     </Row>
     {scopeRow && <Row label={scopeRow.label}>{scopeRow.content}</Row>}
+    {regionRow && <Row label={regionRow.label ?? '地区规划'}>{regionRow.content}</Row>}
     <Row label="自动刷取" actions={
       <button type="button" onClick={queue.openOrderCard} className={secondaryButton}><Settings2 className="h-3.5 w-3.5" />刷取设置</button>
     }>

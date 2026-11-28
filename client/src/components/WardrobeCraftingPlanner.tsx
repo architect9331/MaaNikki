@@ -4,11 +4,22 @@ import clsx from 'clsx';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { buildOwnedProfile } from '@/services/scoring/profile';
 import { findDominatedStandaloneItems, normalizePlanMode } from '@/services/scoring/dominance';
-import { craftingRequirement, rankFarmableDeficits, summarizeMaterials } from '@/services/scoring/materialPlanning';
+import { addCosts, craftingRequirement, rankFarmableDeficits, summarizeMaterials } from '@/services/scoring/materialPlanning';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
+import {
+  ALL_REGIONS,
+  REGION_META,
+  activeRegionOrder,
+  buildCumulativeRegionTiers,
+  isAllRegionsEnabled,
+  normalizeRegionConfig,
+  sketchRegion,
+  type CollectionRegion,
+} from '@/services/collectionRegions';
 import type { CraftingSketch, PlanMode } from '@/services/scoring/types';
 import { useRealmForecast } from '@/services/useRealmForecast';
 import { REALM_GOAL_LABELS } from '@/utils/nikkiOptions';
+import { CollectionRegionFilter } from './CollectionRegionFilter';
 import { ManualReadButton, ManualReadLogStrip } from './ManualReadControls';
 import { secondaryButton } from './ui/FeaturePage';
 import { PlanEmpty, PlanLayout, PlanListPanel, PlanPanel, bulkButton, planCheckbox, planField } from './CollectionPlan';
@@ -55,6 +66,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   const [search, setSearch] = useState('');
   const [quality, setQuality] = useState('all');
   const [kind, setKind] = useState<'all' | 'suit' | 'piece' | 'dominated'>('all');
+  const [listRegion, setListRegion] = useState<'all' | CollectionRegion | 'none'>('all');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [extraEnergy, setExtraEnergy] = useState(0);
@@ -64,7 +76,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   }, [activeUid, account?.updated_at, wardrobeUpdatedAt, refreshToken, load]);
   useEffect(() => {
     setLimit(PAGE_SIZE);
-  }, [search, quality, kind]);
+  }, [search, quality, kind, listRegion]);
 
   const { entries, crafting: craftingForecast, queueSummary, dailyEnergy } = useRealmForecast({
     extraMaterialEnergy: extraEnergy,
@@ -75,12 +87,22 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   const crafting = payload?.crafting_catalog;
   const scope = materials.crafting_scope ?? 'all';
   const mode: PlanMode = normalizePlanMode(materials.crafting_plan?.mode);
+  const regionCfg = useMemo(() => normalizeRegionConfig(materials.crafting_regions), [materials.crafting_regions]);
+  const enabledRegions = useMemo(() => new Set(regionCfg.enabled), [regionCfg.enabled]);
+  const allRegionsOn = isAllRegionsEnabled(regionCfg);
+  const regionOrder = activeRegionOrder(regionCfg);
   const selected = useMemo(() => new Set(materials.crafting_plan?.sketch_ids ?? []), [materials.crafting_plan]);
   const profile = useMemo(() => (payload ? buildOwnedProfile(payload, settings) : null), [payload, settings]);
   const ownedIds = useMemo(() => new Set(profile?.items.map((item) => item.id) ?? []), [profile]);
 
-  // 全收集与战力共用阶段范围（全部设计图 / 仅成套）；战力额外排除纯下位散件；自选可从全部未制设计图勾选。
+  // 全收集与战力共用阶段与地区范围；战力额外排除纯下位散件；自选可从全部未制设计图勾选。
   const allSketches = crafting?.sketches ?? [];
+  const matDefs = crafting?.materials;
+  const matchesRegion = (sketch: CraftingSketch) => {
+    if (allRegionsOn) return true;
+    const reg = sketchRegion(sketch, matDefs);
+    return reg !== null && enabledRegions.has(reg);
+  };
   const dominatedMap = useMemo(() => {
     if (!payload) return new Map();
     const available = new Set([...ownedIds, ...allSketches.map((sketch) => sketch.id)]);
@@ -90,11 +112,15 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
       available,
     );
   }, [payload, ownedIds, allSketches]);
-  const scoped = useMemo(() => allSketches.filter((sketch) => scope === 'all' || sketch.category === 'suit'), [allSketches, scope]);
+  const scoped = useMemo(
+    () => allSketches.filter((sketch) => (scope === 'all' || sketch.category === 'suit') && matchesRegion(sketch)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allSketches, scope, allRegionsOn, enabledRegions, matDefs],
+  );
   const powerSketches = useMemo(() => scoped.filter((sketch) => !dominatedMap.has(sketch.id)), [scoped, dominatedMap]);
   const dominatedSketches = useMemo(
-    () => (scope === 'suits' ? [] : allSketches.filter((sketch) => !ownedIds.has(sketch.id) && dominatedMap.has(sketch.id))),
-    [scope, allSketches, ownedIds, dominatedMap],
+    () => (scope === 'suits' ? [] : scoped.filter((sketch) => !ownedIds.has(sketch.id) && dominatedMap.has(sketch.id))),
+    [scope, scoped, ownedIds, dominatedMap],
   );
   const effectiveKind = (mode !== 'power' || scope === 'suits') && kind === 'dominated' ? 'all' : kind;
   const listed = mode === 'all' ? scoped : mode === 'power' ? (effectiveKind === 'dominated' ? dominatedSketches : powerSketches) : allSketches;
@@ -106,6 +132,21 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
     [allSketches, selected, ownedIds],
   );
   const planned = mode === 'all' ? uncraftedScoped : mode === 'power' ? uncraftedPower : picked;
+
+  const regionCounts = useMemo(() => {
+    const counts: Partial<Record<CollectionRegion, string>> = {};
+    for (const reg of ALL_REGIONS) {
+      let n = 0;
+      for (const sketch of allSketches) {
+        if (ownedIds.has(sketch.id)) continue;
+        if (scope === 'suits' && sketch.category !== 'suit') continue;
+        if (mode === 'power' && scope !== 'suits' && dominatedMap.has(sketch.id)) continue;
+        if (sketchRegion(sketch, matDefs) === reg) n++;
+      }
+      counts[reg] = n > 0 ? `${n} 张` : '已齐';
+    }
+    return counts;
+  }, [allSketches, ownedIds, scope, mode, dominatedMap, matDefs]);
 
   const { monsterQueue, jihuaQueue, scopePreviews } = useMemo(() => {
     const inv = materials.inventory ?? {};
@@ -122,8 +163,15 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
       return next;
     };
     const plannedReq = applyConsumed(craftingRequirement(planned));
-    const monster = rankFarmableDeficits(plannedReq, {}, crafting, inv, 'monster');
-    const jihua = rankFarmableDeficits(plannedReq, {}, crafting, inv, 'jihua');
+    const byRegion: Record<string, Record<string, number>> = {};
+    for (const sketch of planned) {
+      const key = sketchRegion(sketch, matDefs) ?? '_other';
+      byRegion[key] ??= {};
+      addCosts(byRegion[key], sketch.costs);
+    }
+    const regionTiers = buildCumulativeRegionTiers(plannedReq, byRegion, regionOrder);
+    const monster = rankFarmableDeficits(plannedReq, {}, crafting, inv, 'monster', regionTiers);
+    const jihua = rankFarmableDeficits(plannedReq, {}, crafting, inv, 'jihua', regionTiers);
 
     const safeDaily = Math.max(10, dailyEnergy);
     const previewFor = (targetScope: 'all' | 'suits') => {
@@ -131,7 +179,8 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
         (sketch) =>
           !ownedIds.has(sketch.id) &&
           (targetScope === 'all' || sketch.category === 'suit') &&
-          (mode !== 'power' || targetScope === 'suits' || !dominatedMap.has(sketch.id)),
+          (mode !== 'power' || targetScope === 'suits' || !dominatedMap.has(sketch.id)) &&
+          matchesRegion(sketch),
       );
       const req = applyConsumed(craftingRequirement(items));
       const sum = summarizeMaterials(req, crafting, inv, payload?.catalog.material_names, safeDaily);
@@ -147,7 +196,8 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
         suits: previewFor('suits'),
       },
     };
-  }, [planned, materials, payload, mode, crafting, allSketches, ownedIds, dominatedMap, dailyEnergy]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planned, materials, payload, mode, crafting, allSketches, ownedIds, dominatedMap, dailyEnergy, regionOrder, allRegionsOn, enabledRegions]);
 
   const { totals, realmTotals } = craftingForecast;
   const consumedTotal = Object.values(materials.crafted_consumed ?? {}).reduce((sum, value) => sum + Math.max(0, Number(value)), 0);
@@ -201,10 +251,18 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   }
 
   const q = search.trim();
+  const groupRegion = (group: SketchGroup): CollectionRegion | null => {
+    for (const sk of group.missing) {
+      const reg = sketchRegion(sk, matDefs);
+      if (reg) return reg;
+    }
+    return null;
+  };
   const shown = groups.filter(
     (group) =>
       (quality === 'all' || String(group.quality) === quality) &&
       (effectiveKind === 'all' || effectiveKind === 'dominated' || (effectiveKind === 'suit') === group.suit) &&
+      (listRegion === 'all' || (listRegion === 'none' ? groupRegion(group) === null : groupRegion(group) === listRegion)) &&
       (!q || group.title.includes(q) || group.missing.some((sketch) => sketch.name.includes(q))),
   );
   const activeTotal = mode === 'power' ? powerSketches.length : scoped.length;
@@ -323,6 +381,17 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
               }
             : undefined
         }
+        regionRow={{
+          label: '地区规划',
+          content: (
+            <CollectionRegionFilter
+              value={materials.crafting_regions}
+              mode={mode}
+              counts={regionCounts}
+              onChange={(next) => updateMaterials((previous) => ({ ...previous, crafting_regions: next }))}
+            />
+          ),
+        }}
         queueStatus={crystalShort ? `还差 ${crystalShort} 种试炼晶石（约 ${num(realmTotals.energy)} 体力）` : '试炼晶石已备齐，轮到时直接交给下一项'}
         queueHint="平时按未制作设计图缺口刷取魔物试炼晶石；超级激化双倍（智能选择）也会顺带为制衣按缺口补纯真丝线与噗灵（先丝线、后噗灵）。"
         advice={craftingAdvice}
@@ -353,6 +422,13 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
                   {mode === 'power' && dominatedSketches.length > 0 && (
                     <option value="dominated">已排除下位散件（{dominatedSketches.length}）</option>
                   )}
+                </select>
+                <select aria-label="地区" className={planField} value={listRegion} onChange={(event) => setListRegion(event.target.value as typeof listRegion)}>
+                  <option value="all">全部地区</option>
+                  {ALL_REGIONS.map((reg) => (
+                    <option key={reg} value={reg}>{REGION_META[reg].label}（{REGION_META[reg].version}）</option>
+                  ))}
+                  <option value="none">无试炼晶石</option>
                 </select>
                 <select aria-label="星级" className={planField} value={quality} onChange={(event) => setQuality(event.target.value)}>
                   <option value="all">全部星级</option>

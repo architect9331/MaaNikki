@@ -17,6 +17,12 @@ from collection.scanner import RescanSlot
 from collection.statistics import is_enabled as stats_enabled, upload
 from collection.storage import InventoryStore
 from collection.blessing import SLOTS
+from collection.regions import (
+    active_region_order,
+    blessing_source_region,
+    is_all_regions_enabled,
+    normalize_region_config,
+)
 from account_state import AccountState, game_day
 
 ORGANIZE_OPTIONS = {"auto": None, "always": False, "always_unlock": True}
@@ -30,12 +36,31 @@ def blessing_mode(role: dict) -> str:
     return "all"
 
 
-def blessing_focus(role: dict) -> list[str] | None:
-    """Set names chosen in the 祝福闪光 自选 plan; None means 全收集 or 战力."""
-    if blessing_mode(role) != "selected":
+def blessing_region_order(role: dict) -> list[str] | None:
+    """Ordered region priority for 祝福闪光 when enabled, else None."""
+    cfg = normalize_region_config((role.get("materials") or {}).get("blessing_regions"))
+    return active_region_order(cfg)
+
+
+def blessing_focus(role: dict, catalog: dict | None = None) -> list[str] | None:
+    """Set names in scope for 祝福闪光; None means all 5-star target sets."""
+    if blessing_mode(role) == "selected":
+        plan = (role.get("materials") or {}).get("blessing_plan") or {}
+        return [str(name) for name in plan.get("sets") or [] if isinstance(name, str)]
+    cfg = normalize_region_config((role.get("materials") or {}).get("blessing_regions"))
+    if is_all_regions_enabled(cfg):
         return None
-    plan = (role.get("materials") or {}).get("blessing_plan") or {}
-    return [str(name) for name in plan.get("sets") or [] if isinstance(name, str)]
+    if catalog is None:
+        from data_paths import data_path
+        catalog = json.loads(data_path("resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
+    enabled = set(cfg["enabled"])
+    return [
+        str(item["name"])
+        for item in (catalog.get("sets") or [])
+        if item.get("rarity") == 5
+        and item.get("collection_target", True)
+        and blessing_source_region(item.get("source")) in enabled
+    ]
 
 
 def glow_shortfall(rt, role: dict, organize_mode: str = "auto") -> bool:
@@ -46,7 +71,7 @@ def glow_shortfall(rt, role: dict, organize_mode: str = "auto") -> bool:
     catalog = json.loads(data_path("resource/data/blessing_catalog.json").read_text(encoding="utf-8"))
     targets = [item for item in catalog["sets"] if item["rarity"] == 5 and item.get("collection_target", True)]
     mode = blessing_mode(role)
-    focus = blessing_focus(role)
+    focus = blessing_focus(role, catalog)
     if focus is not None:
         targets = [item for item in targets if item["name"] in set(focus)]
         if not targets:
@@ -150,8 +175,9 @@ class BlessingPursuitAction(CustomAction):
             flow = FiveStarPursuit(pursuit, decompose_duplicates=decompose, auto_bling=auto_bling,
                                   chance_priority=True, share_statistics=share,
                                   farm_only=farm_only, reserve_bling=reserve_bling,
-                                  focus_sets=blessing_focus(role_state),
-                                  power_mode=(blessing_mode(role_state) == "power"))
+                                  focus_sets=blessing_focus(role_state, catalog),
+                                  power_mode=(blessing_mode(role_state) == "power"),
+                                  region_order=blessing_region_order(role_state))
             ok = flow.run()
             if not ok and not rt.stopped:
                 rt.diagnostic("blessing_pursuit", "祝福闪光处理未完成")

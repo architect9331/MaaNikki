@@ -7,15 +7,17 @@ from task_control import TaskStopped
 from .scanner import RescanSlot
 from .supply import CollectionSupply
 from .decompose import DuplicateDecomposer, LowRarityDecomposer
+from .regions import REGION_LABELS, blessing_source_region, region_rank
 
 
 class FiveStarPursuit:
     def __init__(self, inventory, *, decompose_duplicates=False, auto_bling=True, chance_priority=True,
                  share_statistics=False, farm_only=False, skip_prefix_scan=False, reserve_bling=0,
-                 focus_sets=None, power_mode=False, max_farm_runs=None):
+                 focus_sets=None, power_mode=False, max_farm_runs=None, region_order=None):
         self.inventory = inventory
-        # 自选: only these blessing sets weigh realm choice and decide completion.
+        # 自选 or region filter: only these blessing sets weigh realm choice and decide completion.
         self.focus_sets = set(focus_sets) if focus_sets is not None else None
+        self.region_order = list(region_order) if region_order else None
         self.power_mode = bool(power_mode)
         self.rt = inventory.rt
         self.decompose_duplicates = decompose_duplicates
@@ -130,23 +132,32 @@ class FiveStarPursuit:
                 weight = len(part["missing_colors"])
             value[part["source"]] += weight
         # Stable sorting keeps catalog order for equal values.
-        sources = sorted((source for source in value if value[source]), key=lambda source: -value[source])
+        positive = [source for source in value if value[source] > 0]
+        sources = sorted(
+            positive,
+            key=lambda source: (region_rank(blessing_source_region(source), self.region_order), -value[source]),
+        )
         if not sources:
             return
         stock.report["realm_candidates"] = [
             {"rank": index + 1, "source": source, "value": round(value[source], 4)}
             for index, source in enumerate(sources)]
         stock.save()
+        region_note = (
+            "，地区顺位：" + " → ".join(REGION_LABELS.get(r, r) for r in self.region_order)
+            if self.region_order
+            else ""
+        )
         if self.farm_only:
             self.rt.log(
-                "五星只刷胚子幻境顺位（按已收颜色与仓库胚子折算期望新色）："
+                f"五星只刷胚子幻境顺位（按已收颜色与仓库胚子折算期望新色{region_note}）："
                 + " → ".join(f"{source}（{value[source]:.2f}）" for source in sources)
                 + "。按顺位选择能快速挑战的副本，消耗剩余活跃能量刷取胚子。",
                 detail=True,
             )
         else:
             unit = "预期新色" if self.chance_priority else "缺色数"
-            self.rt.log(f"五星追全幻境顺位（{unit}）：" + " → ".join(
+            self.rt.log(f"五星追全幻境顺位（{unit}{region_note}）：" + " → ".join(
                 f"{source}（{value[source]:.2f}）" for source in sources)
                 + "。按顺位选择能快速挑战的副本，用剩余活跃能量挑战一批，然后升级。",
                 detail=True)

@@ -37,6 +37,17 @@ import {
   normalizePlanMode,
   normalizeRenewalScope,
 } from './scoring/dominance';
+import {
+  activeRegionOrder,
+  blessingSourceRegion,
+  buildCumulativeRegionTiers,
+  isAllRegionsEnabled,
+  materialRegion,
+  normalizeRegionConfig,
+  regionRank,
+  sketchRegion,
+  type CollectionRegion,
+} from './collectionRegions';
 import type { MaterialsState, PlanMode, RenewalScope, ScoringPayload, ScoringSettings } from './scoring/types';
 
 export const WEEKLY_ENERGY_PER_RUN = 60;
@@ -301,6 +312,7 @@ function simulateMaterialTrend(options: {
   extraEnergy?: number;
   includeJihuaInPrimary: boolean;
   totalRequiredEnergy: number;
+  regionOrder?: CollectionRegion[] | null;
 }): {
   energy: number;
   days: number;
@@ -317,6 +329,7 @@ function simulateMaterialTrend(options: {
     extraEnergy = 0,
     includeJihuaInPrimary,
     totalRequiredEnergy,
+    regionOrder,
   } = options;
   const safeDaily = Math.max(10, dailyEnergy);
   const mats = crafting?.materials ?? {};
@@ -333,17 +346,20 @@ function simulateMaterialTrend(options: {
   const secondaryJihua: SimItem[] = [];
   for (const row of rows) {
     if (row.missing <= 0) continue;
+    const meta = mats[row.id];
+    const regRank = regionOrder ? regionRank(materialRegion(meta), regionOrder) : 0;
     if (kind === 'crafting') {
       if (row.group === 'crystal') {
-        const item = toSimItem(row, 0);
+        const item = toSimItem(row, regRank);
         if (item) primaryItems.push(item);
       } else if (row.group === 'jihua') {
         const item = toSimItem(row, 1);
         if (item) secondaryJihua.push(item);
       }
     } else {
-      // Farm bubbles and pure thread first (whichever has the largest energy gap); farm bling last.
-      const priority = row.id === BLING_ID ? 1 : 0;
+      // Farm bubbles and pure thread first (respecting region priority when ordered); farm bling last.
+      const isBling = row.id === BLING_ID;
+      const priority = isBling ? 100 : (meta?.realm === 'monster' ? regRank : (regionOrder ? 0 : 0));
       const item = toSimItem(row, priority);
       if (item) primaryItems.push(item);
     }
@@ -513,11 +529,11 @@ function simulateMaterialTrend(options: {
       secondaryMetric: kind === 'crafting' ? energySpent + secondarySpent + remSecondary : remBling,
     });
 
-    if (hadVortex && groupDone(primaryItems, ['vortex'])) {
-      recordMilestone('vortex', '1.0 涡影泡泡备齐', day, energySpent);
-    }
     if (hadChroma && groupDone(primaryItems, ['chroma'])) {
-      recordMilestone('chroma', '2.0 幻彩泡泡备齐', day, energySpent);
+      recordMilestone('chroma', '1.0 幻彩泡泡备齐', day, energySpent);
+    }
+    if (hadVortex && groupDone(primaryItems, ['vortex'])) {
+      recordMilestone('vortex', '2.0 涡影泡泡备齐', day, energySpent);
     }
     if (hadMisi && groupDone(primaryItems, ['misi'])) {
       recordMilestone('misi', '3.0 弥思泡泡备齐', day, energySpent);
@@ -609,6 +625,10 @@ export function computeCraftingForecast(
   const ownedIds = new Set(profile.items.map((item) => item.id));
   const selected = new Set(materials.crafting_plan?.sketch_ids ?? []);
   const allSketches = crafting.sketches ?? [];
+  const regionCfg = normalizeRegionConfig(materials.crafting_regions);
+  const enabledRegions = new Set(regionCfg.enabled);
+  const allRegionsOn = isAllRegionsEnabled(regionCfg);
+  const regionOrder = activeRegionOrder(regionCfg);
   const scoped = allSketches.filter((sketch) => scope === 'all' || sketch.category === 'suit');
   const dominated =
     mode === 'power' && scope !== 'suits'
@@ -618,23 +638,35 @@ export function computeCraftingForecast(
           new Set([...ownedIds, ...allSketches.map((sketch) => sketch.id)]),
         )
       : null;
+  const matchesRegion = (sketch: (typeof allSketches)[number]) => {
+    if (allRegionsOn) return true;
+    const reg = sketchRegion(sketch, crafting.materials);
+    return reg !== null && enabledRegions.has(reg);
+  };
   const planned =
     mode === 'all'
-      ? scoped.filter((sketch) => !ownedIds.has(sketch.id))
+      ? scoped.filter((sketch) => !ownedIds.has(sketch.id) && matchesRegion(sketch))
       : mode === 'power'
-        ? scoped.filter((sketch) => !ownedIds.has(sketch.id) && !dominated?.has(sketch.id))
+        ? scoped.filter((sketch) => !ownedIds.has(sketch.id) && !dominated?.has(sketch.id) && matchesRegion(sketch))
         : allSketches.filter((sketch) => selected.has(sketch.id) && !ownedIds.has(sketch.id));
 
   const required = craftingRequirement(planned);
+  const byRegion: Record<string, Record<string, number>> = {};
+  for (const sketch of planned) {
+    const key = sketchRegion(sketch, crafting.materials) ?? '_other';
+    byRegion[key] ??= {};
+    addCosts(byRegion[key], sketch.costs);
+  }
   const snapshotKey = `${payload.snapshot.updated_at ?? ''}:${payload.snapshot.scanned_count ?? 0}`;
   if (mode !== 'selected' && materials.wardrobe_baseline_key === snapshotKey) {
     for (const [id, used] of Object.entries(materials.crafted_consumed ?? {})) {
       if (required[id]) required[id] = Math.max(0, required[id] - Math.max(0, Number(used)));
     }
   }
+  const regionTiers = buildCumulativeRegionTiers(required, byRegion, regionOrder);
 
   const inventory = materials.inventory ?? {};
-  const priorityQueue = rankFarmableDeficits(required, {}, crafting, inventory, 'monster');
+  const priorityQueue = rankFarmableDeficits(required, {}, crafting, inventory, 'monster', regionTiers);
   const totals = summarizeMaterials(required, crafting, inventory, payload.catalog.material_names, dailyEnergy);
   const crystalRows = totals.rows.filter((row) => row.group === 'crystal');
   const crystalEnergy = crystalRows.reduce((sum, row) => sum + row.energy, 0);
@@ -668,6 +700,7 @@ export function computeCraftingForecast(
     extraEnergy,
     includeJihuaInPrimary: false,
     totalRequiredEnergy,
+    regionOrder,
   });
 
   const history = Object.entries(account?.observations?.material_history ?? {})
@@ -752,13 +785,23 @@ export function computeRenewalForecast(
 
   const required: Record<string, number> = {};
   const priorityRequired: Record<string, number> = {};
+  const byRegion: Record<string, Record<string, number>> = {};
+  const regionCfg = normalizeRegionConfig(materials.renewal_regions);
+  const enabledRegions = new Set(regionCfg.enabled);
+  const allRegionsOn = isAllRegionsEnabled(regionCfg);
+  const regionOrder = activeRegionOrder(regionCfg);
   let priorityPendingCount = 0;
   if (source === 'targets') {
     const glow = materials.glow_plan;
     if (glow && glow.enabled !== false && !glow.completed) {
       for (const [id, val] of Object.entries(glow.targets ?? {})) {
         const count = Math.round(Number(val) || 0);
-        if (count > 0) required[id] = count;
+        if (count > 0) {
+          required[id] = count;
+          const regKey = materialRegion(crafting?.materials[id]) ?? '_other';
+          byRegion[regKey] ??= {};
+          byRegion[regKey][id] = count;
+        }
       }
     }
   } else if (payload?.snapshot) {
@@ -780,7 +823,8 @@ export function computeRenewalForecast(
         if (wanted !== undefined) baseTarget = Math.min(wanted, top);
       } else if (
         !(mode === 'power' && dominated?.has(group.scoreId)) &&
-        matchesRenewalScope(group.quality, Boolean(group.suitName), renewalScope)
+        matchesRenewalScope(group.quality, Boolean(group.suitName), renewalScope) &&
+        (allRegionsOn || (group.region !== null && enabledRegions.has(group.region)))
       ) {
         baseTarget = top;
       }
@@ -791,7 +835,11 @@ export function computeRenewalForecast(
       if (effectiveTarget <= 0) continue;
       const cur = group.level ?? 0;
       if (cur < effectiveTarget) {
-        addCosts(required, renewalCost(payload.catalog, group, effectiveTarget));
+        const cost = renewalCost(payload.catalog, group, effectiveTarget);
+        addCosts(required, cost);
+        const regKey = group.region ?? '_other';
+        byRegion[regKey] ??= {};
+        addCosts(byRegion[regKey], cost);
       }
       if (pTarget !== undefined && cur < pTarget) {
         priorityPendingCount++;
@@ -809,9 +857,10 @@ export function computeRenewalForecast(
       if (priorityRequired[id] <= 0) delete priorityRequired[id];
     }
   }
+  const regionTiers = buildCumulativeRegionTiers(required, byRegion, regionOrder);
 
   const inventory = materials.inventory ?? {};
-  const priorityQueue = rankFarmableDeficits(required, priorityRequired, crafting, inventory);
+  const priorityQueue = rankFarmableDeficits(required, priorityRequired, crafting, inventory, undefined, regionTiers);
   const totals = summarizeMaterials(required, crafting, inventory, payload?.catalog.material_names, dailyEnergy);
   const farmableRows = totals.rows.filter((row) => row.group !== 'world');
   const rawEnergy = farmableRows.reduce((sum, row) => sum + row.energy, 0);
@@ -849,6 +898,7 @@ export function computeRenewalForecast(
     extraEnergy,
     includeJihuaInPrimary: true,
     totalRequiredEnergy,
+    regionOrder,
   });
 
   const history = Object.entries(account?.observations?.material_history ?? {})
@@ -904,8 +954,17 @@ export function buildBlessingContext(
   const planMode = normalizePlanMode(materials.blessing_plan?.mode);
   const isPower = planMode === 'power';
   const chosen = new Set(materials.blessing_plan?.sets ?? []);
-  const inScope = (name: string) => planMode !== 'selected' || chosen.has(name);
-  const scopeSets = sets.filter((s) => inScope(s.name));
+  const regionCfg = normalizeRegionConfig(materials.blessing_regions);
+  const enabledRegions = new Set(regionCfg.enabled);
+  const allRegionsOn = isAllRegionsEnabled(regionCfg);
+  const regionOrder = activeRegionOrder(regionCfg);
+  const inScope = (set: (typeof sets)[number]) => {
+    if (planMode === 'selected') return chosen.has(set.name);
+    if (allRegionsOn) return true;
+    const reg = blessingSourceRegion(set.source);
+    return reg !== null && enabledRegions.has(reg);
+  };
+  const scopeSets = sets.filter(inScope);
 
   const isFarmOnly = optionValues?.CollectionWorkflow
     ? realmCollectionWorkflow(optionValues) === 'FarmOnly'
@@ -983,10 +1042,17 @@ export function buildBlessingContext(
   };
 
   const allParts = buildParts(sets, isPower);
-  const scopeParts = planMode !== 'selected' ? allParts : buildParts(scopeSets, false);
+  const scopeParts = buildParts(scopeSets, isPower);
   const missingBySource = calcMissingBySource(allParts);
-  const scopeMissingMap = planMode !== 'selected' ? missingBySource : calcMissingBySource(scopeParts);
-  const scopeNext = [...scopeMissingMap].sort((a, b) => b[1] - a[1])[0];
+  const scopeMissingMap = calcMissingBySource(scopeParts);
+  const scopeNext = [...scopeMissingMap]
+    .filter(([, value]) => value > 0)
+    .sort((a, b) => {
+      const rankDiff =
+        regionRank(blessingSourceRegion(a[0]), regionOrder) -
+        regionRank(blessingSourceRegion(b[0]), regionOrder);
+      return rankDiff !== 0 ? rankDiff : b[1] - a[1];
+    })[0];
 
   const presets: RainbowPreset[] = [];
   const catalogRate = probability?.iridescent ?? 0.045;
@@ -1034,6 +1100,14 @@ export function buildBlessingContext(
         : 'ready';
 
   const hasPerPartEmbryos = Object.keys(partEmbryos).length > 0;
+  const sourcePriority = regionOrder
+    ? Object.fromEntries(
+        [...new Set(scopeParts.map((part) => part.source))].map((source) => [
+          source,
+          regionRank(blessingSourceRegion(source), regionOrder),
+        ]),
+      )
+    : undefined;
   const baseInput: BlessingContext['baseInput'] =
     progress.known && scopeParts.length > 0
       ? {
@@ -1049,6 +1123,7 @@ export function buildBlessingContext(
           capacityLimit: resources?.capacity?.[1] ?? 1000,
           decompose: decomposeEnabled,
           blingPerRun: resources?.bling_per_run ?? 80000,
+          sourcePriority,
         }
       : null;
 

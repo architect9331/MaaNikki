@@ -9,11 +9,23 @@ import { collectionSlots as slots, collectionKey as keyOf } from '@/utils/blessi
 import { REALM_GOAL_LABELS } from '@/utils/nikkiOptions';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import { normalizePlanMode } from '@/services/scoring/dominance';
+import {
+  ALL_REGIONS,
+  REGION_META,
+  activeRegionOrder,
+  blessingSourceRegion,
+  isAllRegionsEnabled,
+  normalizeRegionConfig,
+  regionRank,
+  type CollectionRegion,
+  type RegionFilterConfig,
+} from '@/services/collectionRegions';
 import type { PlanMode } from '@/services/scoring/types';
 import { useRealmForecast } from '@/services/useRealmForecast';
 import { getPearpalLoginState, openPearpalLogin, refreshPearpalStatus, usePearpalStore } from '@/services/pearpalService';
 import { isTauri } from '@/utils/paths';
 import { BlessingForecastPanel } from './RealmForecastPanel';
+import { CollectionRegionFilter } from './CollectionRegionFilter';
 import { PearPalIcon } from './PearpalAccount';
 import { ManualReadButton, ManualReadLogStrip } from './ManualReadControls';
 import { Card, Segmented, Tile, Notices, secondaryButton, type Notice } from './ui/FeaturePage';
@@ -60,6 +72,10 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
   const planMode: PlanMode = normalizePlanMode(materials.blessing_plan?.mode);
   const isPower = planMode === 'power';
   const chosen = useMemo(() => new Set(materials.blessing_plan?.sets ?? []), [materials.blessing_plan]);
+  const regionCfg = useMemo(() => normalizeRegionConfig(materials.blessing_regions), [materials.blessing_regions]);
+  const enabledRegions = useMemo(() => new Set(regionCfg.enabled), [regionCfg.enabled]);
+  const allRegionsOn = isAllRegionsEnabled(regionCfg);
+  const regionOrder = activeRegionOrder(regionCfg);
   const [limit, setLimit] = useState(30);
   const savePlan = (mode: PlanMode, names: Set<string> = chosen) => {
     if (!payload) {
@@ -67,6 +83,13 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
       return;
     }
     updateMaterials((previous) => ({ ...previous, blessing_plan: { mode, sets: [...names] } }));
+  };
+  const saveRegions = (next: RegionFilterConfig) => {
+    if (!payload) {
+      toast.error('请先在「我的衣柜」读取一次衣柜以确认当前账号，再保存地区设置。');
+      return;
+    }
+    updateMaterials((previous) => ({ ...previous, blessing_regions: next }));
   };
   const toggleSets = (names: string[], on: boolean) => {
     const next = new Set(chosen);
@@ -79,6 +102,7 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('missing');
+  const [listRegion, setListRegion] = useState<'all' | CollectionRegion>('all');
   const [syncingPearpal, setSyncingPearpal] = useState(false);
   const pearpalStatus = usePearpalStore((s) => s.status);
   const pearpalBusy = usePearpalStore((s) => s.busy);
@@ -172,10 +196,39 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
   const hasKind = (name: string, colors: string[], slot: string) => colors.some((color) => has(name, slot, color));
   const count = (name: string, colors: string[], slot?: string) =>
     (slot ? [slot] : slots).reduce((n, part) => n + colors.filter((color) => has(name, part, color)).length, 0);
-  const inScope = (name: string) => planMode !== 'selected' || chosen.has(name);
+  const inScope = (set: (typeof sets)[number]) => {
+    if (planMode === 'selected') return chosen.has(set.name);
+    if (allRegionsOn) return true;
+    const reg = blessingSourceRegion(set.source);
+    return reg !== null && enabledRegions.has(reg);
+  };
   const effectiveFilter = isPower && filter === 'rainbow' ? 'missing' : filter;
 
+  const regionCounts = useMemo(() => {
+    const counts: Partial<Record<CollectionRegion, string>> = {};
+    for (const reg of ALL_REGIONS) {
+      const regSets = sets.filter((s) => blessingSourceRegion(s.source) === reg);
+      if (!progress.known) {
+        counts[reg] = `${regSets.length} 套`;
+        continue;
+      }
+      const rem = regSets.reduce((sum, s) => {
+        const owned = isPower
+          ? slots.filter((slot) => hasKind(s.name, s.colors, slot)).length
+          : count(s.name, s.colors);
+        const total = isPower ? slots.length : s.colors.length * 3;
+        return sum + Math.max(0, total - owned);
+      }, 0);
+      counts[reg] = rem > 0 ? `缺 ${rem} ${isPower ? '种' : '色'}` : '已齐';
+    }
+    return counts;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sets, progress, isPower]);
+
   const visible = sets.filter((s) => {
+    if (planMode !== 'selected' && !inScope(s)) return false;
+    const reg = blessingSourceRegion(s.source);
+    if (listRegion !== 'all' && reg !== listRegion) return false;
     const owned = isPower
       ? slots.filter((slot) => hasKind(s.name, s.colors, slot)).length
       : count(s.name, s.colors);
@@ -211,14 +264,18 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
     }
   };
 
-  const listed = [...visible].sort(
-    (a, b) => (missingBySource.get(b.source ?? '') ?? 0) - (missingBySource.get(a.source ?? '') ?? 0),
-  );
+  const listed = [...visible].sort((a, b) => {
+    const rankDiff =
+      regionRank(blessingSourceRegion(a.source), regionOrder) -
+      regionRank(blessingSourceRegion(b.source), regionOrder);
+    if (rankDiff !== 0) return rankDiff;
+    return (missingBySource.get(b.source ?? '') ?? 0) - (missingBySource.get(a.source ?? '') ?? 0);
+  });
   const scopeLabel =
     planMode === 'all'
-      ? `全收集 · ${number(sets.length)} 个套组`
+      ? `全收集 · ${number(scopeSetsCount)} 个套组`
       : isPower
-        ? `战力 · ${number(sets.length * slots.length)} 个种类部件`
+        ? `战力 · ${number(scopeSetsCount * slots.length)} 个种类部件`
         : `自选 · ${number(scopeSetsCount)} 个套组`;
 
   const time = (value: string) => new Date(value).toLocaleString('zh-CN', { hour12: false });
@@ -386,6 +443,17 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
             <>只追勾选套组的缺色，收齐后交给顺序里的下一项，已选 {number(scopeSetsCount)} 个套组。</>
           )
         }
+        regionRow={{
+          label: '地区规划',
+          content: (
+            <CollectionRegionFilter
+              value={materials.blessing_regions}
+              mode={planMode}
+              counts={regionCounts}
+              onChange={saveRegions}
+            />
+          ),
+        }}
         queueStatus={
           <>
             {isFarmOnly ? '只刷胚子' : '全流程托管'} ·{' '}
@@ -425,6 +493,20 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
                     aria-label="搜索套组或副本"
                   />
                 </label>
+                <select
+                  aria-label="地区"
+                  className={planField}
+                  value={listRegion}
+                  onChange={(e) => {
+                    setListRegion(e.target.value as typeof listRegion);
+                    setLimit(30);
+                  }}
+                >
+                  <option value="all">全部地区</option>
+                  {ALL_REGIONS.map((reg) => (
+                    <option key={reg} value={reg}>{REGION_META[reg].label}（{REGION_META[reg].version}）</option>
+                  ))}
+                </select>
                 <Segmented
                   label="筛选收集状态"
                   value={effectiveFilter}
@@ -486,7 +568,7 @@ export function BlessingProgressPanel({ refreshToken }: { refreshToken: number }
                     </p>
                     <p className="truncate text-[11px] text-text-muted">
                       {set.source}
-                      {set.source === scopeNext?.[0] && !needBling && inScope(set.name) ? ' · 今日推荐' : ''}
+                      {set.source === scopeNext?.[0] && !needBling && inScope(set) ? ' · 今日推荐' : ''}
                     </p>
                   </div>
                   <div className="flex min-w-0 flex-1 flex-wrap justify-around gap-x-2 gap-y-1">

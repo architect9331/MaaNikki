@@ -22,9 +22,20 @@ import {
   type RenewalGroup,
 } from '@/services/scoring/materialPlanning';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
+import {
+  ALL_REGIONS,
+  REGION_META,
+  activeRegionOrder,
+  buildCumulativeRegionTiers,
+  isAllRegionsEnabled,
+  materialRegion,
+  normalizeRegionConfig,
+  type CollectionRegion,
+} from '@/services/collectionRegions';
 import type { PlanMode, RenewalPlanState, RenewalScope } from '@/services/scoring/types';
 import { useRealmForecast } from '@/services/useRealmForecast';
 import { REALM_GOAL_LABELS } from '@/utils/nikkiOptions';
+import { CollectionRegionFilter } from './CollectionRegionFilter';
 import { GlowPrepConfigPanel } from './GlowPrepConfigPanel';
 import { ManualReadButton, ManualReadLogStrip } from './ManualReadControls';
 import { secondaryButton } from './ui/FeaturePage';
@@ -47,6 +58,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'todo' | 'below_max' | 'renewable' | 'selected' | 'priority' | 'dominated' | 'all'>('todo');
   const [quality, setQuality] = useState('all');
+  const [listRegion, setListRegion] = useState<'all' | CollectionRegion>('all');
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [showManual, setShowManual] = useState(false);
   const [extraEnergy, setExtraEnergy] = useState(0);
@@ -56,7 +68,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
   }, [activeUid, account?.updated_at, wardrobeUpdatedAt, refreshToken, load]);
   useEffect(() => {
     setLimit(PAGE_SIZE);
-  }, [search, status, quality]);
+  }, [search, status, quality, listRegion]);
 
   const { entries, renewal: renewalForecast, queueSummary, dailyEnergy } = useRealmForecast({
     extraMaterialEnergy: extraEnergy,
@@ -67,6 +79,10 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
   const plan = materials.renewal_plan;
   const mode: PlanMode = normalizePlanMode(plan?.mode);
   const renewalScope: RenewalScope = normalizeRenewalScope(materials.renewal_scope);
+  const regionCfg = useMemo(() => normalizeRegionConfig(materials.renewal_regions), [materials.renewal_regions]);
+  const enabledRegions = useMemo(() => new Set(regionCfg.enabled), [regionCfg.enabled]);
+  const allRegionsOn = isAllRegionsEnabled(regionCfg);
+  const regionOrder = activeRegionOrder(regionCfg);
   const targets = useMemo(() => plan?.targets ?? {}, [plan]);
   const priorityTargets = useMemo(() => plan?.priority_targets ?? {}, [plan]);
   const hasRenewalBaseline = Boolean(payload?.snapshot?.complete && account?.wardrobe?.renewal_scan?.complete);
@@ -86,6 +102,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
       return wanted !== undefined ? Math.min(wanted, top) : undefined;
     }
     if (mode === 'power' && dominatedMap.has(group.scoreId)) return undefined;
+    if (!allRegionsOn && (!group.region || !enabledRegions.has(group.region))) return undefined;
     return matchesRenewalScope(group.quality, Boolean(group.suitName), scopeValue) ? top : undefined;
   };
   const prioTargetFor = (group: RenewalGroup): number | undefined => {
@@ -93,7 +110,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
     return typeof wanted === 'number' && wanted > 0 ? Math.min(wanted, topLevel(group)) : undefined;
   };
 
-  // 全收集/战力按所选阶段范围决定基础目标；搭配计算优先目标可穿透阶段与自选限制。
+  // 全收集/战力按所选阶段与地区范围决定基础目标；搭配计算优先目标可穿透阶段、地区与自选限制。
   const planned = useMemo(
     () =>
       groups.flatMap((group) => {
@@ -104,7 +121,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
         return effective(group) < target ? [{ group, target, outsideBase: baseTarget === undefined }] : [];
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [groups, mode, renewalScope, targets, priorityTargets, dominatedMap],
+    [groups, mode, renewalScope, targets, priorityTargets, dominatedMap, allRegionsOn, enabledRegions],
   );
   const priorityKeys = Object.keys(priorityTargets);
   const priorityPending = useMemo(
@@ -118,8 +135,22 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
           : [];
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [groups, mode, renewalScope, targets, priorityTargets, dominatedMap],
+    [groups, mode, renewalScope, targets, priorityTargets, dominatedMap, allRegionsOn, enabledRegions],
   );
+  const regionCounts = useMemo(() => {
+    const counts: Partial<Record<CollectionRegion, string>> = {};
+    for (const reg of ALL_REGIONS) {
+      let n = 0;
+      for (const group of groups) {
+        if (group.region !== reg) continue;
+        if (mode === 'power' && dominatedMap.has(group.scoreId)) continue;
+        if (!matchesRenewalScope(group.quality, Boolean(group.suitName), renewalScope)) continue;
+        if (effective(group) < topLevel(group)) n++;
+      }
+      counts[reg] = n > 0 ? `${n} 件` : '已齐';
+    }
+    return counts;
+  }, [groups, mode, dominatedMap, renewalScope]);
   const { stagePreviews, priorityOrder, priorityQueue, priorityNeedIds } = useMemo(() => {
     const inv = materials.inventory ?? {};
     const safeDaily = Math.max(10, dailyEnergy);
@@ -148,6 +179,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
         let count = 0;
         for (const group of groups) {
           if (mode === 'power' && dominatedMap.has(group.scoreId)) continue;
+          if (!allRegionsOn && (!group.region || !enabledRegions.has(group.region))) continue;
           if (!matchesRenewalScope(group.quality, Boolean(group.suitName), opt.id)) continue;
           const target = topLevel(group);
           if (effective(group) < target) {
@@ -168,17 +200,27 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
 
     const activeReq: Record<string, number> = {};
     const prioReq: Record<string, number> = {};
+    const byRegion: Record<string, Record<string, number>> = {};
     if (renewalSource(materials) === 'targets') {
       const glow = materials.glow_plan;
       if (glow && glow.enabled !== false && !glow.completed) {
         for (const [id, val] of Object.entries(glow.targets ?? {})) {
           const count = Math.round(Number(val) || 0);
-          if (count > 0) activeReq[id] = count;
+          if (count > 0) {
+            activeReq[id] = count;
+            const regKey = materialRegion(payload?.crafting_catalog?.materials[id]) ?? '_other';
+            byRegion[regKey] ??= {};
+            byRegion[regKey][id] = count;
+          }
         }
       }
     } else if (payload?.catalog) {
       for (const item of planned) {
-        addCosts(activeReq, renewalCost(payload.catalog, item.group, item.target));
+        const cost = renewalCost(payload.catalog, item.group, item.target);
+        addCosts(activeReq, cost);
+        const regKey = item.group.region ?? '_other';
+        byRegion[regKey] ??= {};
+        addCosts(byRegion[regKey], cost);
       }
       for (const item of priorityPending) {
         addCosts(prioReq, renewalCost(payload.catalog, item.group, item.target));
@@ -189,7 +231,8 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
       prioReq[id] = Math.min(prioReq[id], adjActiveReq[id] ?? 0);
       if (prioReq[id] <= 0) delete prioReq[id];
     }
-    const queue = rankFarmableDeficits(adjActiveReq, prioReq, payload?.crafting_catalog, inv);
+    const regionTiers = buildCumulativeRegionTiers(adjActiveReq, byRegion, regionOrder);
+    const queue = rankFarmableDeficits(adjActiveReq, prioReq, payload?.crafting_catalog, inv, undefined, regionTiers);
     const needIds = new Set(
       Object.entries(prioReq)
         .filter(([id, need]) => need > Math.max(0, Number(inv[id] ?? 0)))
@@ -201,7 +244,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
       priorityQueue: queue,
       priorityNeedIds: needIds,
     };
-  }, [materials, dailyEnergy, payload, settings.updated_at, groups, mode, dominatedMap, planned, priorityPending]);
+  }, [materials, dailyEnergy, payload, settings.updated_at, groups, mode, dominatedMap, planned, priorityPending, allRegionsOn, enabledRegions, regionOrder]);
   const pickedCount = groups.filter((group) => targets[group.id] !== undefined).length;
   const { totals, realmTotals } = renewalForecast;
   const unknownPlanned = planned.filter(({ group }) => group.level === null).length;
@@ -290,6 +333,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
         return (
           isDominated &&
           !isPrio &&
+          (listRegion === 'all' || group.region === listRegion) &&
           (quality === 'all' || String(group.quality) === quality) &&
           (!q || group.name.includes(q) || (group.suitName ?? '').includes(q) || group.part.includes(q))
         );
@@ -307,6 +351,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
         (effectiveStatus === 'selected' && targets[group.id] !== undefined) ||
         (effectiveStatus === 'priority' && isPrio);
       return (
+        (listRegion === 'all' || group.region === listRegion) &&
         (quality === 'all' || String(group.quality) === quality) &&
         matchesStatus &&
         (!q || group.name.includes(q) || (group.suitName ?? '').includes(q) || group.part.includes(q))
@@ -447,6 +492,17 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
               }
             : undefined
         }
+        regionRow={{
+          label: '地区规划',
+          content: (
+            <CollectionRegionFilter
+              value={materials.renewal_regions}
+              mode={usingTargets ? 'selected' : mode}
+              counts={regionCounts}
+              onChange={(next) => updateMaterials((previous) => ({ ...previous, renewal_regions: next }))}
+            />
+          ),
+        }}
         queueStatus={
           usingTargets ? (
             <>
@@ -523,6 +579,12 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
                     <option value="dominated">已排除下位散件（{dominatedGroups.length}）</option>
                   )}
                   <option value="all">全部已拥有</option>
+                </select>
+                <select aria-label="地区" className={planField} value={listRegion} onChange={(event) => setListRegion(event.target.value as typeof listRegion)}>
+                  <option value="all">全部地区</option>
+                  {ALL_REGIONS.map((reg) => (
+                    <option key={reg} value={reg}>{REGION_META[reg].label}（{REGION_META[reg].version}）</option>
+                  ))}
                 </select>
                 <select aria-label="星级" className={planField} value={quality} onChange={(event) => setQuality(event.target.value)}>
                   <option value="all">全部星级</option>
@@ -649,7 +711,7 @@ export function WardrobeRenewalPlanner({ refreshToken, onOpenCloset }: { refresh
               realmEnergyLabel="幻境所需能量"
               priorityOrder={priorityOrder}
               priorityNeedIds={priorityNeedIds}
-              groups={['jihua', 'vortex', 'chroma', 'misi', 'crystal', 'world']}
+              groups={['jihua', 'chroma', 'vortex', 'misi', 'crystal', 'world']}
               onStockChange={setStock}
               headerAction={<ManualReadButton targetMode="backpack" idleLabel="更新背包" compact />}
               empty={mode === 'selected' && !pickedCount ? '在左侧勾选想升级或焕新的衣服，这里会算出需要、库存与还差多少。' : '计划里的衣服都已养成到目标，不需要材料'}
