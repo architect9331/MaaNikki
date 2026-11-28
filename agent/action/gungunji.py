@@ -20,6 +20,7 @@ SINGLE_COST_ROI = [330, 555, 135, 38]
 TEN_PULL_ROI = [775, 590, 220, 58]
 TEN_COST_ROI = [820, 555, 150, 38]
 DAILY_REMAIN_ROI = [960, 662, 315, 42]
+SKIP_ALL_ROI = [1080, 10, 198, 60]
 SKIP_ROI = [1120, 660, 155, 52]
 CONTINUE_ROI = [1000, 662, 275, 48]
 CONGRATS_ROI = [540, 155, 200, 60]
@@ -37,6 +38,7 @@ _RE_TEN_PULL = re.compile(r"滚动十次|十连|10\s*次")
 _RE_SINGLE_PULL = re.compile(r"滚动一次|单抽|1\s*次")
 _RE_FREE = re.compile(r"免费|免費")
 _RE_DAILY_REMAIN = re.compile(r"今日剩[余餘]?滚动次数[：:]\s*(\d+)\s*/\s*(\d+)")
+_RE_SKIP_ALL = re.compile(r"跳过全部|跳過全部")
 _RE_SKIP = re.compile(r"跳过|跳過")
 _RE_CONTINUE = re.compile(r"空白[区區]域[继繼][续續]|点击空白|点[击擊]任意")
 _RE_CONGRATS = re.compile(r"恭喜[获獲]得")
@@ -158,7 +160,14 @@ class GungunjiAction(CustomAction):
                 rt.log("已在惊喜滚滚机抽取界面，直接开始抽取。")
                 rt.pause(0.45)
                 return True
-            # Handle lingering settlement screen if user resumed mid-reveal.
+            # Handle lingering reveal / settlement screen if user resumed mid-pull.
+            skip_all_box, _ = _find_text_box(rt, SKIP_ALL_ROI, _RE_SKIP_ALL, frame)
+            if skip_all_box:
+                center = _box_center(skip_all_box)
+                if center:
+                    rt.action("Click", target=[center[0], center[1]])
+                    rt.pause(0.45)
+                    continue
             if _find_text_box(rt, CONTINUE_ROI, _RE_CONTINUE, frame)[0] or _find_text_box(rt, CONGRATS_ROI, _RE_CONGRATS, frame)[0]:
                 rt.action("Click", target=[SAFE_BLANK_CLICK[0], SAFE_BLANK_CLICK[1]])
                 rt.pause(0.45)
@@ -209,7 +218,17 @@ class GungunjiAction(CustomAction):
             if stop_reason:
                 return stop_reason
 
-            # 1. Pull animation skip prompt (bottom-right: F 跳过)
+            # 1. 10-pull reveal skip-all button (top-right: >> 跳过全部); prefer over single-step continue.
+            skip_all_box, _ = _find_text_box(rt, SKIP_ALL_ROI, _RE_SKIP_ALL, frame)
+            if skip_all_box:
+                saw_transition = True
+                center = _box_center(skip_all_box)
+                if center:
+                    rt.action("Click", target=[center[0], center[1]])
+                    rt.pause(0.45)
+                    continue
+
+            # 2. Pull animation skip prompt (bottom-right: F 跳过)
             skip_box, _ = _find_text_box(rt, SKIP_ROI, _RE_SKIP, frame)
             if skip_box:
                 saw_transition = True
@@ -219,7 +238,7 @@ class GungunjiAction(CustomAction):
                     rt.pause(0.45)
                     continue
 
-            # 2. New item reveal / 恭喜获得 settlement (bottom-right: F / 空白区域继续)
+            # 3. New item reveal / 恭喜获得 settlement (bottom-right: F / 空白区域继续)
             cont_box, _ = _find_text_box(rt, CONTINUE_ROI, _RE_CONTINUE, frame)
             congrats_box, _ = _find_text_box(rt, CONGRATS_ROI, _RE_CONGRATS, frame)
             if cont_box or congrats_box:
