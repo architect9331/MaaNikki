@@ -98,6 +98,70 @@ export function craftingRequirement(sketches: CraftingSketch[]) {
   return required;
 }
 
+export type CraftabilityStatus = 'craftable' | 'need_world' | 'missing';
+
+export interface CraftabilityMissingItem {
+  id: string;
+  name: string;
+  group: MaterialGroup;
+  need: number;
+  owned: number | null;
+  missing: number;
+}
+
+export interface CraftabilityResult {
+  status: CraftabilityStatus;
+  missingItems: CraftabilityMissingItem[];
+  untrackedCount: number;
+}
+
+/**
+ * Evaluate whether a sketch (or summed suit costs) can be crafted right now
+ * given the recorded backpack inventory.
+ */
+export function evaluateCostsCraftability(
+  costs: Record<string, number>,
+  crafting: CraftingCatalog | null | undefined,
+  inventory: Record<string, number>,
+  names: Record<string, string> = {},
+): CraftabilityResult {
+  const missingItems: CraftabilityMissingItem[] = [];
+  let missingRealm = false;
+  let missingWorld = false;
+  let untrackedCount = 0;
+
+  for (const [id, rawNeed] of Object.entries(costs ?? {})) {
+    const need = Math.max(0, Math.round(Number(rawNeed) || 0));
+    if (!need) continue;
+    const meta = crafting?.materials[id];
+    const group = materialGroup(meta);
+    const hasStock = Object.prototype.hasOwnProperty.call(inventory, id);
+    const tracked = group !== 'world' || hasStock;
+    const owned = tracked ? Math.max(0, Number(inventory[id] ?? 0)) : null;
+    if (owned === null) {
+      untrackedCount++;
+      missingWorld = true;
+      missingItems.push({ id, name: meta?.name ?? names[id] ?? id, group, need, owned: null, missing: need });
+      continue;
+    }
+    const missing = Math.max(0, need - owned);
+    if (missing > 0) {
+      if (group === 'world') missingWorld = true;
+      else missingRealm = true;
+      missingItems.push({ id, name: meta?.name ?? names[id] ?? id, group, need, owned, missing });
+    }
+  }
+
+  const status: CraftabilityStatus = !missingRealm && !missingWorld
+    ? 'craftable'
+    : !missingRealm
+      ? 'need_world'
+      : 'missing';
+
+  missingItems.sort((a, b) => Number(a.group === 'world') - Number(b.group === 'world') || b.missing - a.missing);
+  return { status, missingItems, untrackedCount };
+}
+
 export interface RenewalGroup {
   id: string;
   scoreId: string;

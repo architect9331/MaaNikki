@@ -176,11 +176,29 @@ export interface BackpackScanSummary {
   bling?: number;
   total_tracked?: number;
 }
+export interface SketchScanState {
+  updated_at?: string;
+  complete?: boolean;
+  /** Sketch IDs observed as unlocked in the game's 设计图 UI. */
+  unlocked_ids?: string[];
+  /** Sketch IDs directly observed as craftable (standalone piece or full-suit). */
+  game_craftable_ids?: string[];
+  /** Uncrafted suit sketch IDs where the game showed the glowing full-suit craftable badge. */
+  game_full_suit_ids?: string[];
+  /** Uncrafted suit sketch IDs where the game showed the partial-suit craftable badge. */
+  game_partial_suit_ids?: string[];
+  /** Extra craftable non-wardrobe blueprints (makeup / 奇想香氛 / 大喵斗篷). */
+  extra_craftable?: { tab: string; name: string }[];
+  scanned_count?: number;
+  unmatched_count?: number;
+  reason?: string | null;
+}
 export interface MaterialsState {
   inventory?: Record<string, number>;
   inventory_updated_at?: string;
   backpack_scanned_day?: string;
   backpack_summary?: BackpackScanSummary | null;
+  sketch_scan?: SketchScanState | null;
   wardrobe_baseline_key?: string;
   crafted_consumed?: Record<string, number>;
   crafting_scope?: 'all' | 'suits';

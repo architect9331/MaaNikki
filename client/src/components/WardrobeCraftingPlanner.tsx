@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronRight, Hammer, Loader2, RotateCcw, Search } from 'lucide-react';
+import { CheckCircle2, ChevronRight, Hammer, Loader2, RotateCcw, Search } from 'lucide-react';
 import clsx from 'clsx';
 import { useAccountStateStore } from '@/stores/accountStateStore';
 import { buildOwnedProfile } from '@/services/scoring/profile';
 import { findDominatedStandaloneItems, normalizePlanMode } from '@/services/scoring/dominance';
-import { addCosts, craftingRequirement, rankFarmableDeficits, summarizeMaterials } from '@/services/scoring/materialPlanning';
+import {
+  addCosts,
+  craftingRequirement,
+  evaluateCostsCraftability,
+  rankFarmableDeficits,
+  summarizeMaterials,
+  type CraftabilityResult,
+} from '@/services/scoring/materialPlanning';
 import { useWardrobePlanStore } from '@/services/scoring/wardrobePlanStore';
 import {
   ALL_REGIONS,
@@ -67,6 +74,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   const [quality, setQuality] = useState('all');
   const [kind, setKind] = useState<'all' | 'suit' | 'piece' | 'dominated'>('all');
   const [listRegion, setListRegion] = useState<'all' | CollectionRegion | 'none'>('all');
+  const [craftFilter, setCraftFilter] = useState<'all' | 'craftable' | 'unlocked' | 'need_world'>('all');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [extraEnergy, setExtraEnergy] = useState(0);
@@ -76,7 +84,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   }, [activeUid, account?.updated_at, wardrobeUpdatedAt, refreshToken, load]);
   useEffect(() => {
     setLimit(PAGE_SIZE);
-  }, [search, quality, kind, listRegion]);
+  }, [search, quality, kind, listRegion, craftFilter]);
 
   const { entries, crafting: craftingForecast, queueSummary, dailyEnergy } = useRealmForecast({
     extraMaterialEnergy: extraEnergy,
@@ -251,6 +259,99 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   }
 
   const q = search.trim();
+  const sketchScan = materials.sketch_scan ?? null;
+  const hasSketchScan = Boolean(sketchScan?.updated_at);
+  const sketchScanComplete = Boolean(sketchScan?.complete);
+  const unlockedSketchIds = useMemo(() => new Set(sketchScan?.unlocked_ids ?? []), [sketchScan]);
+  const gameCraftableIds = useMemo(() => new Set(sketchScan?.game_craftable_ids ?? []), [sketchScan]);
+  const gameFullSuitIds = useMemo(() => new Set(sketchScan?.game_full_suit_ids ?? []), [sketchScan]);
+  const gamePartialSuitIds = useMemo(() => new Set(sketchScan?.game_partial_suit_ids ?? []), [sketchScan]);
+  const extraCraftable = useMemo(() => sketchScan?.extra_craftable ?? [], [sketchScan]);
+  const inv = useMemo(() => materials.inventory ?? {}, [materials.inventory]);
+  const hasBackpackStock = Object.keys(inv).length > 0;
+  const materialNames = payload?.catalog.material_names;
+
+  const { pieceCraftability, groupCraftInfo, craftableSummary } = useMemo(() => {
+    const pieceMap = new Map<string, CraftabilityResult>();
+    const groupMap = new Map<
+      string,
+      {
+        craftableCount: number;
+        suitAllCraftable: boolean;
+        suitPartialGame: boolean;
+        needWorldOnly: boolean;
+        unlockedCount: number;
+      }
+    >();
+    let craftablePieces = 0;
+    let craftableSuits = 0;
+    let partialSuits = 0;
+    let needWorldPieces = 0;
+
+    for (const group of groups) {
+      let cCount = 0;
+      let uCount = 0;
+      let hasNeedWorld = false;
+      const suitCosts: Record<string, number> = {};
+      const gameFull = group.suit && group.missing.some((sk) => gameFullSuitIds.has(sk.id));
+      const gamePartial = group.suit && !gameFull && group.missing.some((sk) => gamePartialSuitIds.has(sk.id));
+      for (const sketch of group.missing) {
+        const res = evaluateCostsCraftability(sketch.costs, crafting, inv, materialNames);
+        const gameFlag = gameCraftableIds.has(sketch.id) || gameFull;
+        const effectiveRes: CraftabilityResult = gameFlag
+          ? { ...res, status: 'craftable' }
+          : res;
+        pieceMap.set(sketch.id, effectiveRes);
+        const isUnlocked = !sketchScanComplete || unlockedSketchIds.has(sketch.id) || gameFlag || gamePartial;
+        if (unlockedSketchIds.has(sketch.id) || gameFlag || gamePartial) uCount++;
+        if (effectiveRes.status === 'craftable' && isUnlocked) {
+          cCount++;
+          craftablePieces++;
+        } else if (effectiveRes.status === 'need_world' && isUnlocked) {
+          hasNeedWorld = true;
+          needWorldPieces++;
+        }
+        addCosts(suitCosts, sketch.costs);
+      }
+      const allUnlocked = !sketchScanComplete || uCount === group.missing.length;
+      const suitCombined = group.suit
+        ? evaluateCostsCraftability(suitCosts, crafting, inv, materialNames)
+        : null;
+      const suitAllCraftable = Boolean(
+        group.suit &&
+          (gameFull ||
+            (allUnlocked &&
+              (suitCombined?.status === 'craftable' ||
+                (cCount === group.missing.length && group.missing.every((sk) => gameCraftableIds.has(sk.id)))))),
+      );
+      if (suitAllCraftable) craftableSuits++;
+      else if (group.suit && (gamePartial || cCount > 0)) partialSuits++;
+      groupMap.set(group.key, {
+        craftableCount: cCount,
+        suitAllCraftable,
+        suitPartialGame: gamePartial,
+        needWorldOnly: cCount === 0 && !gamePartial && hasNeedWorld,
+        unlockedCount: uCount,
+      });
+    }
+
+    return {
+      pieceCraftability: pieceMap,
+      groupCraftInfo: groupMap,
+      craftableSummary: { craftablePieces, craftableSuits, partialSuits, needWorldPieces },
+    };
+  }, [
+    groups,
+    crafting,
+    inv,
+    materialNames,
+    sketchScanComplete,
+    unlockedSketchIds,
+    gameCraftableIds,
+    gameFullSuitIds,
+    gamePartialSuitIds,
+  ]);
+
   const groupRegion = (group: SketchGroup): CollectionRegion | null => {
     for (const sk of group.missing) {
       const reg = sketchRegion(sk, matDefs);
@@ -258,13 +359,34 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
     }
     return null;
   };
-  const shown = groups.filter(
-    (group) =>
-      (quality === 'all' || String(group.quality) === quality) &&
-      (effectiveKind === 'all' || effectiveKind === 'dominated' || (effectiveKind === 'suit') === group.suit) &&
-      (listRegion === 'all' || (listRegion === 'none' ? groupRegion(group) === null : groupRegion(group) === listRegion)) &&
-      (!q || group.title.includes(q) || group.missing.some((sketch) => sketch.name.includes(q))),
-  );
+  const effectiveCraftFilter = !hasSketchScan && craftFilter === 'unlocked' ? 'all' : craftFilter;
+  const shown = groups
+    .filter((group) => {
+      const info = groupCraftInfo.get(group.key);
+      const matchesCraft =
+        effectiveCraftFilter === 'all' ||
+        (effectiveCraftFilter === 'craftable' && ((info?.craftableCount ?? 0) > 0 || Boolean(info?.suitPartialGame) || Boolean(info?.suitAllCraftable))) ||
+        (effectiveCraftFilter === 'unlocked' && (info?.unlockedCount ?? 0) > 0) ||
+        (effectiveCraftFilter === 'need_world' && Boolean(info?.needWorldOnly));
+      return (
+        matchesCraft &&
+        (quality === 'all' || String(group.quality) === quality) &&
+        (effectiveKind === 'all' || effectiveKind === 'dominated' || (effectiveKind === 'suit') === group.suit) &&
+        (listRegion === 'all' || (listRegion === 'none' ? groupRegion(group) === null : groupRegion(group) === listRegion)) &&
+        (!q || group.title.includes(q) || group.missing.some((sketch) => sketch.name.includes(q)))
+      );
+    })
+    .sort((a, b) => {
+      if (effectiveCraftFilter === 'craftable') {
+        const ia = groupCraftInfo.get(a.key);
+        const ib = groupCraftInfo.get(b.key);
+        return (
+          Number(ib?.suitAllCraftable ?? false) - Number(ia?.suitAllCraftable ?? false) ||
+          (ib?.craftableCount ?? 0) - (ia?.craftableCount ?? 0)
+        );
+      }
+      return 0;
+    });
   const activeTotal = mode === 'power' ? powerSketches.length : scoped.length;
   const madeCount = activeTotal - planned.length;
   const scopeLabel = scope === 'suits' ? '仅成套' : '全部设计图';
@@ -301,7 +423,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
 
   return (
     <div className="space-y-4">
-      <ManualReadLogStrip modes={['backpack']} />
+      <ManualReadLogStrip modes={['sketch', 'backpack']} />
       <PlanPanel
         goal="crafting"
         tone={payload.snapshot.complete ? 'ok' : 'warn'}
@@ -309,13 +431,19 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
           <>
             按 {formatTime(payload.snapshot.updated_at)} 的衣柜记录计算 · 已制作{' '}
             <strong className="tabular-nums text-text-primary">{num(mode === 'selected' ? allSketches.length - allSketches.filter((s) => !ownedIds.has(s.id)).length : madeCount)}</strong> / {num(mode === 'selected' ? allSketches.length : activeTotal)} 张设计图
+            {sketchScan?.updated_at && (
+              <> · 设计图扫描于 {formatTime(sketchScan.updated_at)}（已解锁 {num(unlockedSketchIds.size)} 张）</>
+            )}
             {!payload.snapshot.complete && <span className="text-warning"> · 衣柜尚未读完，未读到的衣服会被当作没做</span>}
           </>
         }
         actions={
-          <button type="button" onClick={onOpenCloset} className={secondaryButton}>
-            更新衣柜
-          </button>
+          <>
+            <ManualReadButton targetMode="sketch" idleLabel={hasSketchScan ? '重扫设计图' : '扫描设计图'} />
+            <button type="button" onClick={onOpenCloset} className={secondaryButton}>
+              更新衣柜
+            </button>
+          </>
         }
         mode={mode}
         onModeChange={(next) => {
@@ -396,6 +524,60 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
         queueHint="平时按未制作设计图缺口刷取魔物试炼晶石；超级激化双倍（智能选择）也会顺带为制衣按缺口补纯真丝线与噗灵（先丝线、后噗灵）。"
         advice={craftingAdvice}
       />
+      {(hasBackpackStock || hasSketchScan) && (
+        <div className="space-y-2 rounded-xl border border-success/35 bg-success/5 px-4 py-2.5 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2 text-text-secondary">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
+              <p className="min-w-0 flex-1 leading-5">
+                {craftableSummary.craftablePieces > 0 || craftableSummary.craftableSuits > 0 || craftableSummary.partialSuits > 0 ? (
+                  <>
+                    当前可制作{' '}
+                    <strong className="tabular-nums text-success">{num(craftableSummary.craftablePieces)}</strong> 件
+                    {craftableSummary.craftableSuits > 0 && (
+                      <> · 整套可制 <strong className="tabular-nums text-success">{num(craftableSummary.craftableSuits)}</strong> 套</>
+                    )}
+                    {craftableSummary.partialSuits > 0 && (
+                      <> · 部分可制 <strong className="tabular-nums text-success">{num(craftableSummary.partialSuits)}</strong> 套</>
+                    )}
+                    {craftableSummary.needWorldPieces > 0 && (
+                      <> · 另有 {num(craftableSummary.needWorldPieces)} 件仅差采集物</>
+                    )}
+                    {!sketchScanComplete && ' · 点上方「扫描设计图」可按游戏内角标区分已解锁与整套/部分可制'}
+                  </>
+                ) : (
+                  <>
+                    当前范围内暂无材料齐全的服装设计图
+                    {craftableSummary.needWorldPieces > 0 && `（有 ${num(craftableSummary.needWorldPieces)} 件仅差采集物）`}
+                    。
+                  </>
+                )}
+              </p>
+            </div>
+            {(craftableSummary.craftablePieces > 0 || craftableSummary.craftableSuits > 0 || craftableSummary.partialSuits > 0) && (
+              <button
+                type="button"
+                onClick={() => setCraftFilter((prev) => (prev === 'craftable' ? 'all' : 'craftable'))}
+                className={clsx(
+                  'shrink-0 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors',
+                  effectiveCraftFilter === 'craftable'
+                    ? 'border-success bg-success/15 text-success'
+                    : 'border-border bg-bg-secondary text-text-primary hover:border-success hover:text-success',
+                )}
+              >
+                {effectiveCraftFilter === 'craftable' ? '显示全部设计图' : '只看当前可制作'}
+              </button>
+            )}
+          </div>
+          {extraCraftable.length > 0 && (
+            <p className="border-t border-success/20 pt-1.5 text-[11px] leading-5 text-text-secondary">
+              <strong className="text-success">设计图扫描额外发现可制作（妆容 / 香氛 / 斗篷，共 {extraCraftable.length} 项）：</strong>
+              {extraCraftable.slice(0, 12).map((item) => `${item.name}（${item.tab}）`).join('、')}
+              {extraCraftable.length > 12 ? ` 等 ${extraCraftable.length} 项` : ''}
+            </p>
+          )}
+        </div>
+      )}
       <PlanLayout
         list={
           <PlanListPanel
@@ -430,6 +612,12 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
                   ))}
                   <option value="none">无试炼晶石</option>
                 </select>
+                <select aria-label="可制作状态" className={planField} value={effectiveCraftFilter} onChange={(event) => setCraftFilter(event.target.value as typeof craftFilter)}>
+                  <option value="all">全部制作状态</option>
+                  <option value="craftable">当前可制作（{craftableSummary.craftablePieces}）</option>
+                  {hasSketchScan && <option value="unlocked">已解锁设计图（{unlockedSketchIds.size}）</option>}
+                  <option value="need_world">仅差采集物（{craftableSummary.needWorldPieces}）</option>
+                </select>
                 <select aria-label="星级" className={planField} value={quality} onChange={(event) => setQuality(event.target.value)}>
                   <option value="all">全部星级</option>
                   <option value="8">星冕</option>
@@ -457,6 +645,15 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
               const ids = group.missing.map((sketch) => sketch.id);
               const count = ids.filter((id) => selected.has(id)).length;
               const open = expanded.has(group.key);
+              const cInfo = groupCraftInfo.get(group.key);
+              const pieceCraft = !group.suit ? pieceCraftability.get(group.missing[0].id) : undefined;
+              const pieceUnlocked = !group.suit
+                ? (!sketchScanComplete || unlockedSketchIds.has(group.missing[0].id) || gameCraftableIds.has(group.missing[0].id))
+                : true;
+              const missingHint = (res?: CraftabilityResult) =>
+                res && res.missingItems.length > 0
+                  ? `缺：${res.missingItems.slice(0, 3).map((m) => `${m.name}×${m.missing}`).join('、')}${res.missingItems.length > 3 ? ` 等 ${res.missingItems.length} 项` : ''}`
+                  : undefined;
               return (
                 <div key={group.key} className={clsx(mode === 'selected' && count > 0 && 'bg-accent/5')}>
                   <div className="flex items-center gap-2 px-4 py-2 text-xs">
@@ -495,6 +692,36 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
                         已被「{dominatedMap.get(group.missing[0].id)!.dominatorName}」替代
                       </span>
                     )}
+                    {group.suit && cInfo?.suitAllCraftable && (
+                      <span className="shrink-0 rounded bg-success/15 px-1.5 py-0.5 text-[11px] font-medium text-success">
+                        整套可制
+                      </span>
+                    )}
+                    {group.suit && !cInfo?.suitAllCraftable && ((cInfo?.craftableCount ?? 0) > 0 || cInfo?.suitPartialGame) && (
+                      <span className="shrink-0 rounded bg-success/10 px-1.5 py-0.5 text-[11px] font-medium text-success tabular-nums">
+                        {(cInfo?.craftableCount ?? 0) > 0
+                          ? `可制 ${cInfo!.craftableCount}/${group.missing.length}`
+                          : '可制部分'}
+                      </span>
+                    )}
+                    {!group.suit && !pieceUnlocked && (
+                      <span className="shrink-0 rounded bg-bg-tertiary px-1.5 py-0.5 text-[11px] text-text-muted">
+                        未解锁图纸
+                      </span>
+                    )}
+                    {!group.suit && pieceUnlocked && pieceCraft?.status === 'craftable' && (
+                      <span className="shrink-0 rounded bg-success/15 px-1.5 py-0.5 text-[11px] font-medium text-success">
+                        可制作
+                      </span>
+                    )}
+                    {!group.suit && pieceUnlocked && pieceCraft?.status !== 'craftable' && hasBackpackStock && (
+                      <span
+                        className="max-w-44 shrink-0 truncate text-[11px] text-text-muted"
+                        title={missingHint(pieceCraft)}
+                      >
+                        {missingHint(pieceCraft)}
+                      </span>
+                    )}
                     {group.suit && (
                       <span className="shrink-0 tabular-nums text-text-secondary">
                         还差 {group.missing.length} / {group.total} 件
@@ -503,20 +730,33 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
                   </div>
                   {group.suit && open && (
                     <div className="space-y-1 pb-2 pl-11 pr-4">
-                      {group.missing.map((sketch) => (
-                        <label key={sketch.id} className="flex items-center gap-2 text-xs text-text-secondary">
-                          {mode === 'selected' && (
-                            <input
-                              type="checkbox"
-                              checked={selected.has(sketch.id)}
-                              onChange={(event) => toggle([sketch.id], event.target.checked)}
-                              className={planCheckbox}
-                            />
-                          )}
-                          <span className="w-12 shrink-0 text-text-muted">{sketch.part}</span>
-                          <span className="truncate">{sketch.name}</span>
-                        </label>
-                      ))}
+                      {group.missing.map((sketch) => {
+                        const skCraft = pieceCraftability.get(sketch.id);
+                        const skUnlocked = !sketchScanComplete || unlockedSketchIds.has(sketch.id) || gameCraftableIds.has(sketch.id);
+                        return (
+                          <label key={sketch.id} className="flex items-center gap-2 text-xs text-text-secondary">
+                            {mode === 'selected' && (
+                              <input
+                                type="checkbox"
+                                checked={selected.has(sketch.id)}
+                                onChange={(event) => toggle([sketch.id], event.target.checked)}
+                                className={planCheckbox}
+                              />
+                            )}
+                            <span className="w-12 shrink-0 text-text-muted">{sketch.part}</span>
+                            <span className="min-w-0 flex-1 truncate">{sketch.name}</span>
+                            {!skUnlocked ? (
+                              <span className="shrink-0 text-[11px] text-text-muted">未解锁</span>
+                            ) : skCraft?.status === 'craftable' ? (
+                              <span className="shrink-0 rounded bg-success/15 px-1.5 py-0.5 text-[10px] font-medium text-success">可制作</span>
+                            ) : hasBackpackStock ? (
+                              <span className="max-w-48 shrink-0 truncate text-[11px] text-text-muted" title={missingHint(skCraft)}>
+                                {missingHint(skCraft)}
+                              </span>
+                            ) : null}
+                          </label>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

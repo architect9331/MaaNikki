@@ -13,6 +13,7 @@ from registration import agent_action
 from task_control import TaskStopped
 from wardrobe.renewal_scanner import RenewalScanner
 from wardrobe.scanner import WardrobeScanner
+from wardrobe.sketch_scanner import SketchScanner
 
 
 @agent_action("nikki.wardrobe_read")
@@ -150,4 +151,52 @@ class InfiniteHeartReadAction(CustomAction):
             if not rt.stopped:
                 rt.diagnostic("infinite_heart_read", str(error))
             rt.log(f"无限之心读取中断：{error}。")
+            return False
+
+
+@agent_action("nikki.sketch_read")
+class SketchReadAction(CustomAction):
+    def run(self, context, argv):
+        rt = Runtime(context)
+        scanner = None
+        try:
+            rt.log("设计图扫描开始。")
+            scanner = SketchScanner(rt)
+            complete = scanner.run()
+            summary = scanner.summary
+            rt.log(
+                f"设计图扫描{'完成' if complete else '结束'}："
+                f"已解锁设计图 {summary.get('unlocked_count', 0)} 张"
+                + (
+                    f"，可做全套部件 {summary['game_full_suit_count']} 张"
+                    if summary.get("game_full_suit_count")
+                    else ""
+                )
+                + (
+                    f"，可做部分套装部件 {summary['game_partial_suit_count']} 张"
+                    if summary.get("game_partial_suit_count")
+                    else ""
+                )
+                + (
+                    f"，其他可制（妆容/香氛/斗篷）{summary['extra_craftable_count']} 项"
+                    if summary.get("extra_craftable_count")
+                    else ""
+                )
+                + "。"
+            )
+            if not complete and summary.get("reason"):
+                rt.log(summary["reason"])
+            _, finished = rt.finish(argv.node_name)
+            return complete and finished
+        except TaskStopped:
+            raise
+        except Exception as error:
+            if not rt.stopped:
+                rt.diagnostic("sketch_read", str(error))
+            if scanner is not None:
+                try:
+                    scanner.save(str(error), complete=False)
+                except (OSError, ValueError) as save_error:
+                    rt.log(f"设计图扫描进度保存失败：{save_error}。", detail=True)
+            rt.log(f"设计图扫描中断：{error}。")
             return False

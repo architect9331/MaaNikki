@@ -22,6 +22,7 @@ export type WardrobeReadMode =
   | 'renewal'
   | 'renewal_inc'
   | 'backpack'
+  | 'sketch'
   | 'infinite_heart'
   | 'bless_organize'
   | 'bless_upgrade'
@@ -33,6 +34,7 @@ export const READ_SPECS: Record<WardrobeReadMode, { taskName: string; label: str
   renewal: { taskName: 'renewal_read', label: '完整焕新读取', entry: 'MaaNikki_RenewalRead', busyText: '正在完整读取服装焕新与衣柜' },
   renewal_inc: { taskName: 'renewal_read_inc', label: '增量同步衣柜与焕新', entry: 'MaaNikki_RenewalIncrementalRead', busyText: '正在按获得时间快速增量同步服装与等级' },
   backpack: { taskName: 'backpack_read', label: '背包读取', entry: 'MaaNikki_BackpackRead', busyText: '正在读取背包库存' },
+  sketch: { taskName: 'sketch_read', label: '设计图扫描', entry: 'MaaNikki_SketchRead', busyText: '正在扫描游戏内设计图解锁与可制作状态' },
   infinite_heart: { taskName: 'infinite_heart_read', label: '无限之心读取', entry: 'MaaNikki_InfiniteHeartRead', busyText: '正在以最高视野读取无限之心解锁进度' },
   bless_organize: { taskName: 'bless_organize', label: '整理并锁定新色', entry: 'MaaNikki_BlessMaintain_Organize', busyText: '正在整理祝福闪光仓库并锁定满级新色' },
   bless_upgrade: { taskName: 'bless_upgrade', label: '升级已有胚子', entry: 'MaaNikki_BlessMaintain_Upgrade', busyText: '正在升级仓库里的五星胚子（不消耗体力）' },
@@ -83,6 +85,10 @@ export function startRenewalIncrementalRead(): Promise<void> {
 
 export function startBackpackRead(): Promise<void> {
   return startRead('backpack');
+}
+
+export function startSketchRead(): Promise<void> {
+  return startRead('sketch');
 }
 
 export function startInfiniteHeartRead(): Promise<void> {

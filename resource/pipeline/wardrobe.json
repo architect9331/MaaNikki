@@ -178,5 +178,34 @@
     },
     "post_delay": 0,
     "next": []
+  },
+  "MaaNikki_Sketch_Entrance": {
+    "recognition": "OCR",
+    "roi": [70, 130, 660, 460],
+    "expected": "^设计图$",
+    "action": "Custom",
+    "custom_action": "nikki.ui_click",
+    "custom_action_param": {
+      "ready": "MaaNikki_SketchReady",
+      "source": "MaaNikki_MenuReady"
+    },
+    "post_delay": 400
+  },
+  "MaaNikki_SketchReady": {
+    "recognition": "OCR",
+    "roi": [65, 15, 220, 48],
+    "expected": "^[设設][计計][图圖]$",
+    "action": "DoNothing"
+  },
+  "MaaNikki_SketchRead": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.sketch_read",
+    "custom_action_param": {
+      "ready": "MaaNikki_SketchReady",
+      "source": "MaaNikki_MainDetected"
+    },
+    "post_delay": 0,
+    "next": []
   }
 }
