@@ -1,0 +1,33 @@
+{
+  "MaaNikki_Gungunji": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.gungunji",
+    "post_delay": 0,
+    "next": []
+  },
+  "MaaNikki_Gungunji_PullMode": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": "ten"
+    }
+  },
+  "MaaNikki_Gungunji_MaxPulls": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": 10
+    }
+  },
+  "MaaNikki_Gungunji_ReserveBling": {
+    "recognition": "DirectHit",
+    "action": "Custom",
+    "custom_action": "nikki.feature_settings",
+    "custom_action_param": {
+      "value": 1000000
+    }
+  }
+}

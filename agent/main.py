@@ -33,6 +33,7 @@ from action import subtask_test as _subtask_test
 from action import start_game as _start_game
 from action import persistent_abilities as _persistent_abilities
 from action import close_game as _close_game
+from action import gungunji as _gungunji
 from recognition import ui_template as _ui_template
 from recognition import crown as _crown
 from recognition import daily as _daily

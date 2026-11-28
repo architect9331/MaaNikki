@@ -1,4 +1,4 @@
-import { AlertCircle, Compass, Fish, Hand, Loader2, MapPin, Play, Square } from 'lucide-react';
+import { AlertCircle, Compass, Dices, Fish, Hand, Loader2, MapPin, Play, Square } from 'lucide-react';
 import clsx from 'clsx';
 import { useAppStore } from '@/stores/appStore';
 import { EXPLORATION_INSTANCE_ID, explorationFeatures } from '@/types/exploration';
@@ -6,6 +6,7 @@ import { explorationStatusLabels, setExplorationEnabled, useExplorationStore } f
 import { getPearpalLoginState, openPearpalLogin, usePearpalStore } from '@/services/pearpalService';
 import { isTauri } from '@/utils/paths';
 import { startFishing, stopFishing, useFishingStore } from '@/services/fishingService';
+import { startGungunji, stopGungunji, useGungunjiStore } from '@/services/gungunjiService';
 import { OptionEditor } from './OptionEditor';
 import { Card, FeaturePage, primaryButton, secondaryButton, StatusBar } from './ui/FeaturePage';
 import { MapMaskSection } from './settings/MapMaskSection';
@@ -40,6 +41,23 @@ function FishingCard() {
   </Card>;
 }
 
+function GungunjiCard() {
+  const status = useGungunjiStore((state) => state.status);
+  const busy = status !== 'idle';
+  return <Card icon={Dices} title="自动抽取滚滚机" aside={<button type="button" disabled={!isTauri() || status === 'stopping'}
+    onClick={() => busy ? stopGungunji() : void startGungunji()} className={busy ? secondaryButton : primaryButton}>
+    {status === 'starting' || status === 'stopping' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : busy ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+    {status === 'stopping' ? '正在停止' : busy ? '停止抽取' : '开始抽取'}
+  </button>}>
+    <div className="space-y-3 px-4 py-3">
+      <p className="text-xs leading-5 text-text-secondary">
+        先站在任意一台惊喜滚滚机前（1.0 / 2.0 / 3.0 均适用）或打开滚滚机界面，再点开始。达到轮数上限、低于保留噗灵下限或奖池抽空时自动停止。
+      </p>
+      {['GungunjiPullMode', 'GungunjiMaxPulls', 'GungunjiReserveBling'].map((key) => <OptionEditor key={key} optionKey={key} globalScope disabled={busy} />)}
+    </div>
+  </Card>;
+}
+
 export function ExplorationPage({ onClose }: { onClose: () => void }) {
   const { enabled, status, error } = useExplorationStore();
   const explorationSettings = useAppStore((state) => state.explorationSettings);
@@ -65,8 +83,9 @@ export function ExplorationPage({ onClose }: { onClose: () => void }) {
       <div className="space-y-4">
         <Card icon={Hand} title="交互辅助">
           <FeatureRows features={explorationFeatures.slice(0, 4)} />
-          <p className="border-t border-border px-4 py-3 text-xs leading-5 text-text-muted">键盘交互支持后台拾取、对白和跳过；鼠标交互及钓鱼在游戏前台运行，游戏最小化后暂停。</p>
+          <p className="border-t border-border px-4 py-3 text-xs leading-5 text-text-muted">键盘交互支持后台拾取、对白和跳过；鼠标交互、钓鱼及滚滚机在游戏前台运行，游戏最小化后暂停。</p>
         </Card>
+        <GungunjiCard />
       </div>
       <div className="space-y-4">
         <FishingCard />
