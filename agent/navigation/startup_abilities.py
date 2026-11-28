@@ -53,8 +53,10 @@ from .gingerbread_companion import (
     CONFIRM_FRAMES,
     POSITION_TOLERANCE,
     badge_centres,
+    clear_gingerbread_active,
     companion_state,
     main_centre,
+    mark_gingerbread_active,
     observe as observe_gingerbread,
 )
 from .models import NavigationError
@@ -385,10 +387,12 @@ def _activate_gingerbread(runtime, event) -> None:
     state, badges = observe_gingerbread(runtime, centre, 3.0)
     event({"type": "persistent_ability", "ability": "gingerbread", "phase": "check", "state": state})
     if state == "out":
+        mark_gingerbread_active(runtime)
         runtime.log("「幸福雪未融」小姜饼人已在身边，无需重复召唤。")
         return
     if state != "in":
         raise NavigationError("右下角未能确认「幸福雪未融」衍生召唤按钮，请检查画面是否被遮挡。")
+    clear_gingerbread_active(runtime)
     for attempt in (1, 2, 3):
         if not runtime.key("ability_derive_1", 0.3):
             raise NavigationError("未能按下「能力衍生功能1」，请检查按键设置。")
@@ -396,6 +400,7 @@ def _activate_gingerbread(runtime, event) -> None:
         state, badges = observe_gingerbread(runtime, centre, 8.0, want="out", abort_on_steady="in")
         event({"type": "persistent_ability", "ability": "gingerbread", "phase": "summon", "attempt": attempt, "state": state})
         if state == "out":
+            mark_gingerbread_active(runtime)
             runtime.log("已开启「幸福雪未融」小姜饼人随行。")
             return
         if state != "in":

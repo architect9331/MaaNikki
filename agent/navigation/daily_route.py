@@ -114,6 +114,7 @@ class RouteActions:
         self.gb_config = {}
         self.gb_pending_approach_pickups = []
         self.gb_empty_stop_streak = 0
+        self.gingerbread_proximity = False
         if self.executor == "navigation":
             from .gingerbread_pickup import GingerbreadRouteAnalyzer, LeftMaterialToastReader
             root_dir = self.resource.parent
@@ -123,6 +124,62 @@ class RouteActions:
             )
         if self.executor == "home":
             self.configure_home_shortcut()
+
+    def enable_gingerbread_proximity(self, *, reset_baseline: bool = False) -> None:
+        """Use Gingerbread proximity pickup/catching instead of exact F-key or net tracking."""
+        self.gingerbread_proximity = True
+        if self.gb_analyzer is None or self.gb_toast_reader is None:
+            from .gingerbread_pickup import GingerbreadRouteAnalyzer, LeftMaterialToastReader
+            root_dir = self.resource.parent
+            self.gb_analyzer = GingerbreadRouteAnalyzer(root_dir, self.route.map_id)
+            self.gb_toast_reader = LeftMaterialToastReader(
+                self.rt, self.gb_analyzer.resolver, list(self.count_materials)
+            )
+        expected = list(self.count_materials)
+        for pt in self.route.points:
+            if pt.action in {"collect", "insect"}:
+                nearby = self.gb_analyzer.query_nearby_spawners(
+                    pt.x, pt.y, max_radius_m=18.0, claim_within_m=0.0, target_names=self.count_materials
+                )
+                for spawner in nearby:
+                    if spawner.name not in expected:
+                        expected.append(spawner.name)
+        self.gb_toast_reader.set_expected_names(expected)
+        if reset_baseline:
+            self.gb_toast_reader.reset_baseline()
+
+    def is_gingerbread_proximity_point(self, point) -> bool:
+        return bool(self.gingerbread_proximity and point.action in {"collect", "insect"})
+
+    def quota_reached(self) -> bool:
+        return (
+            self.executor != "crystal"
+            and self.quota is not None
+            and self.count >= self.quota
+        )
+
+    def _gingerbread_target_kind(self, action_kind: str | None = None) -> str | None:
+        if self.executor == "plant":
+            return "plant"
+        if self.executor == "insect":
+            return "insect"
+        if action_kind == "collect":
+            return "plant"
+        if action_kind == "insect":
+            return "insect"
+        return None
+
+    def _counts_for_task(self, obs, *, action_kind: str | None = None) -> bool:
+        target_kind = self._gingerbread_target_kind(action_kind)
+        if target_kind is None:
+            return True
+        if obs.name in self.count_materials:
+            return True
+        if self.gb_analyzer is not None:
+            kind = self.gb_analyzer.resolver.name_to_kind.get(obs.name)
+            if kind is not None:
+                return kind == target_kind
+        return False
 
     def configure_home_shortcut(self):
         name = self.route.document.get("fishing_shortcut")
@@ -286,7 +343,7 @@ class RouteActions:
         px = float(getattr(pose, "x", 0.0) or 0.0)
         py = float(getattr(pose, "y", 0.0) or 0.0)
         for obs in new_obs:
-            self.count += obs.amount
+            counts = self._counts_for_task(obs)
             ev_item = {
                 "material": obs.name,
                 "amount": obs.amount,
@@ -298,6 +355,13 @@ class RouteActions:
                 "phase": "approach",
                 "raw_text": obs.raw_text,
             }
+            if not counts:
+                self.rt.log(
+                    f"左侧提示（途中非目标类型，不计入任务进度）：+{obs.amount} {obs.name}",
+                    detail=True,
+                )
+                continue
+            self.count += obs.amount
             self.gb_analyzer.in_stride_pickups.append(ev_item)
             self.gb_pending_approach_pickups.append(ev_item)
             self.event({
@@ -312,6 +376,115 @@ class RouteActions:
                 f"左侧提示（途中自动拾取）：+{obs.amount} {obs.name}（前往第 {wp_index + 1} 点途中，累计 {self.count}）",
                 detail=True,
             )
+
+    def wait_gingerbread_proximity(self, point, action_kind: str) -> bool:
+        """Dwell briefly near a collect/insect waypoint for Gingerbread to auto-harvest."""
+        if self.quota_reached():
+            return True
+        from .gingerbread_pickup import M_PER_MAP_PX
+        wp_index = int(getattr(self.navigator, "current_index", 0) or 0)
+        prev_pose = getattr(getattr(self.navigator, "locator", None), "previous", None)
+        actual_x = float(getattr(prev_pose, "x", point.x) or point.x)
+        actual_y = float(getattr(prev_pose, "y", point.y) or point.y)
+        nearby = self.gb_analyzer.query_nearby_spawners(
+            actual_x, actual_y, max_radius_m=18.0, claim_within_m=0.0, target_names=self.count_materials
+        )
+        expected_names = list(dict.fromkeys(list(self.count_materials) + [s.name for s in nearby]))
+        self.gb_toast_reader.set_expected_names(expected_names)
+
+        arrived_at = time.monotonic()
+        picked_here = 0
+        remaining_pending = []
+        for ev in self.gb_pending_approach_pickups:
+            dist_m = math.hypot(float(ev.get("x", actual_x)) - actual_x, float(ev.get("y", actual_y)) - actual_y) * M_PER_MAP_PX
+            if dist_m <= 22.0 or (arrived_at - float(ev.get("ts", 0.0))) <= 7.0:
+                picked_here += int(ev.get("amount") or 1)
+            else:
+                remaining_pending.append(ev)
+        self.gb_pending_approach_pickups = remaining_pending
+
+        quiet_s = 5.5 if action_kind == "insect" else 4.5
+        initial_no_match_s = 6.5 if action_kind == "insect" else 5.5
+        max_wait_s = 18.0 if action_kind == "insect" else 15.0
+        last_match_at = arrived_at
+        last_activity_at = (
+            arrived_at
+            if self.gb_toast_reader.last_toast_activity_at > 0
+            and (arrived_at - self.gb_toast_reader.last_toast_activity_at) <= 2.5
+            else -math.inf
+        )
+        verb = "捕捉" if action_kind == "insect" else "拾取"
+        exit_reason = "max_wait_reached"
+
+        while not self.rt.stopped:
+            now = time.monotonic()
+            elapsed = now - arrived_at
+            if elapsed >= max_wait_s:
+                exit_reason = "max_wait_reached"
+                break
+            self.inputs.check()
+            if self.motion:
+                self.motion.tick()
+            new_obs, any_activity = self.gb_toast_reader.poll()
+            now = time.monotonic()
+            elapsed = now - arrived_at
+            if any_activity:
+                last_activity_at = now
+            for obs in new_obs:
+                if not self._counts_for_task(obs, action_kind=action_kind):
+                    self.rt.log(
+                        f"姜饼人附近拾取非目标类型材料：+{obs.amount} {obs.name}（不计入{verb}进度）",
+                        detail=True,
+                    )
+                    continue
+                self.count += obs.amount
+                picked_here += obs.amount
+                last_match_at = now
+                self.event({
+                    "type": "obtained",
+                    "material": obs.name,
+                    "amount": obs.amount,
+                    "total": self.count,
+                    "phase": "gingerbread_proximity",
+                    "elapsed_s": round(elapsed, 2),
+                    "text": obs.raw_text,
+                })
+                quota_suffix = f"/{self.quota}" if self.quota is not None else ""
+                self.rt.log(
+                    f"姜饼人附近自动{verb}：+{obs.amount} {obs.name}（累计 {self.count}{quota_suffix}）。",
+                    detail=True,
+                )
+                if self.quota_reached():
+                    exit_reason = "quota_reached"
+                    break
+            if exit_reason == "quota_reached":
+                break
+            if picked_here > 0:
+                if (now - last_match_at) >= quiet_s:
+                    exit_reason = "quiet_after_pickup"
+                    break
+            else:
+                activity_grace = 4.0 if (now - last_activity_at) <= 3.0 else 0.0
+                if elapsed >= min(max_wait_s, initial_no_match_s + activity_grace):
+                    exit_reason = "no_target_timeout"
+                    break
+            step_sleep = min(0.25, max(0.05, max_wait_s - (time.monotonic() - arrived_at)))
+            if self.motion:
+                self.motion.wait(step_sleep)
+            else:
+                self.inputs.wait(step_sleep)
+
+        self.event({
+            "type": "gingerbread_proximity_stop",
+            "index": wp_index,
+            "action": action_kind,
+            "picked": picked_here,
+            "total": self.count,
+            "quota": self.quota,
+            "waited_s": round(time.monotonic() - arrived_at, 2),
+            "exit_reason": exit_reason,
+        })
+        return picked_here > 0
 
     def wait_gingerbread(self, point, wait_sec: float):
         from .gingerbread_pickup import M_PER_MAP_PX
@@ -525,7 +698,9 @@ class RouteActions:
             elif kind == "fishing_star" and "陨星" in self.fishing.materials:
                 self.action_failed = False
         elif kind in {"collect", "insect"}:
-            if kind == "collect":
+            if self.gingerbread_proximity:
+                ok = self.wait_gingerbread_proximity(point, kind)
+            elif kind == "collect":
                 scope = (
                     self.rt.foreground_task("鼠标交互采集")
                     if self.rt.game_keys.get("interact").kind == "mouse" else nullcontext()

@@ -35,11 +35,18 @@ scale; a moved or scaled HUD reports "unknown" and stops instead of pressing key
 """
 from __future__ import annotations
 
+import ctypes
+from ctypes import wintypes
+import json
+from pathlib import Path
 from types import SimpleNamespace
+import time as wall_time
 
 import cv2
 import numpy as np
 
+from daily.settings import ROOT
+from file_io import write_json
 from .ability import Ability
 from .models import NavigationError
 
@@ -213,10 +220,12 @@ def ensure_companion(runtime, inputs, event, plan, actions=None):
     event({"type": "gingerbread_companion", "phase": "check", "state": state,
            "badges": [[round(x, 1), round(y, 1)] for x, y in badges]})
     if state == "out":
+        mark_gingerbread_active(runtime)
         runtime.log("小姜饼人已在身边，直接开始采集。", detail=True)
         return True
     if state != "in":
         raise NavigationError("右下角未能确认小姜饼人的召唤按钮，请确认能力按钮未被遮挡后重试。")
+    clear_gingerbread_active(runtime)
     for attempt in (1, 2, 3):
         if runtime.stopped:
             raise NavigationError("已停止，尚未召唤小姜饼人。")
@@ -229,6 +238,7 @@ def ensure_companion(runtime, inputs, event, plan, actions=None):
         event({"type": "gingerbread_companion", "phase": "summon", "attempt": attempt,
                "state": state, "badges": [[round(x, 1), round(y, 1)] for x, y in badges]})
         if state == "out":
+            mark_gingerbread_active(runtime)
             runtime.log("已召唤小姜饼人随行。", detail=True)
             return True
         if state != "in":
@@ -236,3 +246,139 @@ def ensure_companion(runtime, inputs, event, plan, actions=None):
             # an uncertain frame may mean the first press already worked.
             break
     raise NavigationError("已按下召唤键，但未能确认小姜饼人出现，请手动召唤后重试。")
+
+
+_ACTIVE_SESSIONS: dict[str, dict] = {}
+_STATE_FILE = ROOT / "logs" / "navigation" / ".gingerbread_active.json"
+_PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+
+
+def _window_process_identity(hwnd: int) -> tuple[int, int] | None:
+    """Return (pid, creation_filetime) for a live Win32 window handle."""
+    if not hwnd:
+        return None
+    try:
+        user32 = ctypes.windll.user32
+        kernel32 = ctypes.windll.kernel32
+        pid = wintypes.DWORD(0)
+        user32.GetWindowThreadProcessId(wintypes.HWND(int(hwnd)), ctypes.byref(pid))
+        if not pid.value:
+            return None
+        handle = kernel32.OpenProcess(_PROCESS_QUERY_LIMITED_INFORMATION, False, pid.value)
+        if not handle:
+            return int(pid.value), 0
+        try:
+            creation = wintypes.FILETIME()
+            exit_t = wintypes.FILETIME()
+            kernel_t = wintypes.FILETIME()
+            user_t = wintypes.FILETIME()
+            if kernel32.GetProcessTimes(
+                handle,
+                ctypes.byref(creation),
+                ctypes.byref(exit_t),
+                ctypes.byref(kernel_t),
+                ctypes.byref(user_t),
+            ):
+                created = (int(creation.dwHighDateTime) << 32) | int(creation.dwLowDateTime)
+                return int(pid.value), created
+            return int(pid.value), 0
+        finally:
+            kernel32.CloseHandle(handle)
+    except (AttributeError, OSError, ValueError, TypeError):
+        return None
+
+
+def _session_identity(runtime) -> tuple[str, int, int, str]:
+    """Identify the connected live game process (falls back to controller UUID)."""
+    hwnd = None
+    if hasattr(runtime, "_pointer_guard_context"):
+        try:
+            hwnd, _ = runtime._pointer_guard_context(getattr(runtime, "navigation_inputs", None))
+        except Exception:
+            hwnd = None
+    proc = _window_process_identity(hwnd) if hwnd else None
+    uid = str(getattr(runtime, "_account_uid", None) or "")
+    if proc is not None:
+        pid, created = proc
+        return f"pid:{pid}:{created}", pid, created, uid
+    uuid = str(getattr(getattr(runtime, "controller", None), "uuid", None) or "default")
+    return f"ctrl:{uuid}", 0, 0, uid
+
+
+def mark_gingerbread_active(runtime) -> None:
+    """Record that the Gingerbread companion is confirmed summoned for this live game process."""
+    key, pid, created, uid = _session_identity(runtime)
+    record = {
+        "key": key,
+        "pid": pid,
+        "created": created,
+        "uid": uid,
+        "confirmed_at": wall_time.time(),
+    }
+    _ACTIVE_SESSIONS[key] = record
+    if pid:
+        try:
+            _STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+            write_json(_STATE_FILE, record)
+        except OSError:
+            pass
+
+
+def clear_gingerbread_active(runtime) -> None:
+    """Clear remembered Gingerbread active state when confirmed dismissed."""
+    key, pid, created, _ = _session_identity(runtime)
+    _ACTIVE_SESSIONS.pop(key, None)
+    if pid and _STATE_FILE.is_file():
+        try:
+            stored = json.loads(_STATE_FILE.read_text(encoding="utf-8"))
+            if isinstance(stored, dict) and stored.get("pid") == pid and stored.get("created") == created:
+                _STATE_FILE.unlink(missing_ok=True)
+        except (OSError, ValueError):
+            pass
+
+
+def _remembered_gingerbread_active(runtime) -> bool:
+    key, pid, created, uid = _session_identity(runtime)
+    record = _ACTIVE_SESSIONS.get(key)
+    if record is None and pid and _STATE_FILE.is_file():
+        try:
+            stored = json.loads(_STATE_FILE.read_text(encoding="utf-8"))
+            if (isinstance(stored, dict) and stored.get("pid") == pid
+                    and stored.get("created") == created):
+                record = stored
+                _ACTIVE_SESSIONS[key] = stored
+        except (OSError, ValueError):
+            record = None
+    if not isinstance(record, dict):
+        return False
+    saved_uid = str(record.get("uid") or "")
+    if uid and saved_uid and uid != saved_uid:
+        return False
+    if uid and not saved_uid:
+        record["uid"] = uid
+    return True
+
+
+def is_gingerbread_active(runtime, *, frame=None) -> bool:
+    """Return True when Gingerbread companion is confirmed active on this live game session.
+
+    Checks the current overworld HUD directly (zero-input read-only) when 幸福雪未融 is
+    currently equipped so manual summoning or dismissal is respected immediately; otherwise
+    falls back to the session state recorded when 幸福雪未融 was confirmed out for this
+    same live game process.
+    """
+    try:
+        current = runtime.capture() if frame is None else frame
+        if current is not None and runtime.hit("MaaNikki_MainDetected", image=current):
+            from .startup_abilities import GROUPS, hud_ability_matches
+            if hud_ability_matches(runtime, GROUPS["gingerbread"], current):
+                state, _ = companion_state(current, main_centre(runtime))
+                if state == "out":
+                    mark_gingerbread_active(runtime)
+                    return True
+                if state == "in":
+                    clear_gingerbread_active(runtime)
+                    return False
+    except Exception:
+        pass
+    return _remembered_gingerbread_active(runtime)

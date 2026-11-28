@@ -1142,6 +1142,10 @@ class Runtime:
                     if not actions.fishing.configure():
                         raise NavigationError(f"{actions.fishing.label}能力配置未完成，本项尚未开始。")
                     stage = "teleport"
+                if actions and card.rule.executor in {"plant", "insect"}:
+                    from navigation.gingerbread_companion import is_gingerbread_active
+                    if is_gingerbread_active(self):
+                        actions.enable_gingerbread_proximity(reset_baseline=True)
                 if meteor_travel:
                     # Keep the map opened by Go Now; transport handles an arbitrary viewport.
                     teleporter.transport(route["teleport"])
@@ -1151,8 +1155,18 @@ class Runtime:
                     teleporter.transport(route["teleport"], reuse_map=True)
                 else:
                     teleporter.prepare(model)
+                if actions and card.rule.executor in {"plant", "insect"} and not actions.gingerbread_proximity:
+                    from navigation.gingerbread_companion import is_gingerbread_active
+                    if is_gingerbread_active(self):
+                        actions.enable_gingerbread_proximity(reset_baseline=False)
+                if actions and actions.gingerbread_proximity and card.rule.executor in {"plant", "insect"}:
+                    self.log(
+                        "已开启小姜饼人随行，采集与捕虫改为靠近附近自动完成，无需切换能力或精确操作。"
+                    )
                 stage = "ability_selection"
-                if card.rule.executor == "insect" and not actions.select_insect():
+                if (card.rule.executor == "insect"
+                        and not (actions and actions.gingerbread_proximity)
+                        and not actions.select_insect()):
                     raise NavigationError("捕虫能力配置未完成，本项尚未开始。")
             crystal_retries = (3 if actions and actions.executor == "crystal"
                                and model.map_id == "starsea" and route.get("teleport") else 0)

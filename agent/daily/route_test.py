@@ -923,6 +923,12 @@ class RouteTest(Runtime):
             else:
                 teleporter.prepare(model)
             self.prepare_route(settings, actions, inputs)
+            if (actions is not None
+                    and any(point.action in {"collect", "insect"} for point in model.points)):
+                from navigation.gingerbread_companion import is_gingerbread_active
+                if is_gingerbread_active(self):
+                    actions.enable_gingerbread_proximity(reset_baseline=False)
+                    self.log("已开启小姜饼人随行，路线中的采集与捕虫点位改为靠近自动完成。", detail=True)
             self.phase("follow", "正在检查第 1 点并沿路线行走。")
             map_mismatch_retries = 2 if model.document.get("teleport") else 0
             mismatch_attempts = 0

@@ -1665,6 +1665,22 @@ class Navigator:
                 self.current_index = index
                 if self.stopped() or time.monotonic() >= deadline:
                     raise NavigationError("导航已停止或超时。")
+                if (self.point_action is not None
+                        and getattr(self.point_action, "gingerbread_proximity", False)
+                        and hasattr(self.point_action, "quota_reached")
+                        and self.point_action.quota_reached()):
+                    motion.stop()
+                    motion.jump(False, self.walking(), reason="quota_reached",
+                                walking_reliable=self.walking_reliable)
+                    if self.overlay:
+                        self.overlay.notify_motion(0.0, 0.0, False, cancel_jump=True)
+                    self.event({
+                        "type": "quota_reached_in_transit",
+                        "index": index,
+                        "count": self.point_action.count,
+                        "quota": self.point_action.quota,
+                    })
+                    break
                 motion.tick()
                 current_generation = _pause_generation(self.inputs)
                 if current_generation != generation:
@@ -1747,8 +1763,18 @@ class Navigator:
                         continue
                 if rejoin is None and index == 0 and distance(pose, origin) > route.start_radius:
                     raise NavigationError("当前位置不在路线起点附近，未开始移动，请先传送或手动到达起点。")
-                # Pickup locations require closer arrival than transit points.
-                radius = min(target.radius, 1) if target.action == "bottle" else target.radius
+                # Pickup locations require closer arrival than transit points, except
+                # when Gingerbread companion is active and auto-harvests within ~14 m.
+                proximity_action = bool(
+                    rejoin is None
+                    and self.point_action is not None
+                    and hasattr(self.point_action, "is_gingerbread_proximity_point")
+                    and self.point_action.is_gingerbread_proximity_point(target)
+                )
+                if proximity_action:
+                    radius = max(target.radius, 4.5)
+                else:
+                    radius = min(target.radius, 1) if target.action == "bottle" else target.radius
                 pass_radius = radius
                 precise = bool(target.action) or rejoin is not None or index == len(route.points)-1
                 # Tighten ordinary transit points. Preserve action/recovery
@@ -1767,10 +1793,11 @@ class Navigator:
                             and target.action == "wait"
                             and not (target.params or {}).get("compare_map_positions")
                         )
-                        broad_wait = is_wait and radius >= 2.8
+                        broad_wait = (is_wait and radius >= 2.8) or proximity_action
                         accept_radius = (
-                            radius + 1.1 if broad_wait
-                            else (radius + 0.25 if is_wait else radius)
+                            radius + 1.5 if proximity_action
+                            else (radius + 1.1 if broad_wait
+                                  else (radius + 0.25 if is_wait else radius))
                         )
                         motion.stop()
                         motion.jump(False, self.walking(), reason="waypoint_arrival",
