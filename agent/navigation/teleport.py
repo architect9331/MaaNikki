@@ -780,9 +780,31 @@ class Teleporter:
         if not self.rt.ui.enter_page(select_checkpoint, selection_visible,
                 source="MaaNikki_Navigation_MapFeature", recover=restore_map):
             raise NavigationError("传送点选择失败。")
+        missing_resource = None
+        next_missing_check = 0.0
+        def teleport_settled():
+            nonlocal missing_resource, next_missing_check
+            if self.rt.ui.star_collect_world_ready():
+                return True
+            now = time.monotonic()
+            if now >= next_missing_check:
+                next_missing_check = now + 1.2
+                info = self.rt.ui.missing_resource_modal()
+                if info is not None:
+                    missing_resource = info
+                    return True
+            return False
         if not self.rt.ui.enter_page(lambda: self.confirm_transport(checkpoint),
-                "MaaNikki_MainDetected", source=selection_visible, attempts=1, seconds=60):
+                teleport_settled, source=selection_visible, attempts=1, seconds=60):
             raise NavigationError("传送后未恢复主界面。")
+        if missing_resource is not None:
+            region_label = missing_resource.get("region") or checkpoint.get("province") or checkpoint.get("region") or "目标区域"
+            self.event({"type": "teleport_missing_resource", "region": region_label,
+                        "checkpoint": checkpoint["name"]})
+            self.rt.ui.dismiss_missing_resource_modal(info=missing_resource)
+            raise NavigationError(
+                f"游戏缺少「{region_label}」资源包，无法传送，请先在游戏内下载该区域资源后再运行。"
+            )
         self.locator.reset()
         self.hint = checkpoint["x"], checkpoint["y"]
         spire_key = (

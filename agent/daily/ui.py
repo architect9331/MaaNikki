@@ -39,6 +39,11 @@ _RE_DISCONNECT_NOTICE_BODY = re.compile(r"返回登[录錄]界面|尝试重新�
 BLESSING_OVERFLOW_MODAL_ROI = [360, 195, 560, 315]
 _RE_BLESSING_OVERFLOW_TITLE = re.compile(r"祝福[闪閃]光[数數]量溢出")
 _RE_BLESSING_OVERFLOW_BODY = re.compile(r"祝福[闪閃]光[数數]量已超[过過]容量上限")
+MISSING_RESOURCE_MODAL_ROI = [340, 150, 600, 420]
+MISSING_RESOURCE_CLOSE_TARGET = [906, 183]
+_RE_MISSING_RESOURCE_TITLE = re.compile(r"缺失[资資]源")
+_RE_MISSING_RESOURCE_BODY = re.compile(r"[检檢][测測]到缺少[「“\"]([^」”\"]+)[」”\"][资資]源|[检檢][测測]到缺少.*[资資]源")
+_RE_MISSING_RESOURCE_ACTION = re.compile(r"^前往[设設]置$|^下[载載]$")
 
 
 def find_expired_notice_confirm_box(rows):
@@ -223,6 +228,50 @@ def find_blessing_overflow_cancel_box(rows):
     return None
 
 
+def find_missing_resource_modal(rows):
+    """Detect the v3.0 missing region resource-pack modal ("缺失资源").
+
+    Requires all three geometric and semantic anchors together:
+    - Centered title "缺失资源" (y in [150, 230], x in [500, 780])
+    - Body matching "检测到缺少「...」资源" (y in [210, 330], x in [360, 920])
+    - Bottom action button "前往设置" or "下载" (y in [450, 545], x in [400, 880])
+
+    Returns ``{"region": <region or "">, "close_target": [906, 183]}`` so callers
+    can close via the top-right × without clicking Download or Settings.
+    """
+    has_title = False
+    has_body = False
+    has_action = False
+    region = ""
+    for row in rows or ():
+        if row is None:
+            continue
+        clean = str(getattr(row, "text", "") or "").strip()
+        if not clean:
+            continue
+        score = getattr(row, "score", 1.0)
+        if isinstance(score, (int, float)) and score < 0.4:
+            continue
+        box = getattr(row, "box", None)
+        if not box or len(box) < 4:
+            continue
+        bx, by, bw, bh = int(box[0]), int(box[1]), int(box[2]), int(box[3])
+        cx, cy = bx + bw * 0.5, by + bh * 0.5
+        if 150 <= cy <= 230 and 500 <= cx <= 780 and _RE_MISSING_RESOURCE_TITLE.search(clean):
+            has_title = True
+        if 210 <= cy <= 330 and 360 <= cx <= 920:
+            match = _RE_MISSING_RESOURCE_BODY.search(clean)
+            if match:
+                has_body = True
+                if match.lastindex and match.group(1):
+                    region = match.group(1).strip()
+        if 450 <= cy <= 545 and 400 <= cx <= 880 and _RE_MISSING_RESOURCE_ACTION.search(clean):
+            has_action = True
+    if has_title and has_body and has_action:
+        return {"region": region, "close_target": list(MISSING_RESOURCE_CLOSE_TARGET)}
+    return None
+
+
 def fields(context, node):
     data = context.get_node_data(node) or {}
     recognition = data.get("recognition", {})
@@ -296,6 +345,7 @@ class GameUI:
         self._dismissing_notice = False
         self._dismissing_decompose_tutorial = False
         self._dismissing_blessing_overflow = False
+        self._dismissing_missing_resource = False
         self._asset_definitions = self._asset_paths = None
         self._tutorial = None
         self.monthly_paradise_unavailable = False
@@ -816,6 +866,49 @@ class GameUI:
         """Return the Cancel button box of the Eureka overflow warning modal, if visible."""
         rows = self._modal_ocr_rows(BLESSING_OVERFLOW_MODAL_ROI, frame=frame)
         return find_blessing_overflow_cancel_box(rows) if rows is not None else None
+
+    def missing_resource_modal(self, *, frame=None):
+        """Return details of the v3.0 missing region resource modal, if visible."""
+        rows = self._modal_ocr_rows(MISSING_RESOURCE_MODAL_ROI, frame=frame)
+        return find_missing_resource_modal(rows) if rows is not None else None
+
+    def dismiss_missing_resource_modal(self, *, info=None):
+        """Close the v3.0 missing region resource modal via its top-right × button."""
+        if self._dismissing_missing_resource:
+            return None
+        resolved = info if info is not None else self.missing_resource_modal()
+        if resolved is None:
+            return None
+        self._dismissing_missing_resource = True
+        close_target = resolved.get("close_target") or list(MISSING_RESOURCE_CLOSE_TARGET)
+        try:
+            for attempt in range(3):
+                if self.rt.stopped:
+                    return False
+                if attempt > 0:
+                    with self.rt.observe(fresh=True):
+                        if self.missing_resource_modal() is None:
+                            return True
+                if not self.rt.action("Click", target=close_target):
+                    return False
+                clear = 0
+                check_deadline = time.monotonic() + 2.5
+                while not self.rt.stopped and time.monotonic() < check_deadline:
+                    with self.rt.observe(fresh=True):
+                        if self.rt.hit("MaaNikki_MainDetected"):
+                            return True
+                        still_open = self.missing_resource_modal() is not None
+                    if still_open:
+                        clear = 0
+                    else:
+                        clear += 1
+                        if clear >= 2:
+                            return True
+                    if not self.rt.pause(.25):
+                        return False
+            return False
+        finally:
+            self._dismissing_missing_resource = False
 
     def dismiss_blessing_overflow(self, *, box=None):
         """Dismiss the Eureka overflow warning modal by clicking its left Cancel button."""
@@ -1579,6 +1672,15 @@ class GameUI:
                             or decompose_tutorial_target is not None)
                         else self.blessing_overflow_cancel_box()
                     )
+                    missing_resource_info = (
+                        None
+                        if (safe_area_box is not None
+                            or expired_notice_box is not None
+                            or disconnect_notice_box is not None
+                            or decompose_tutorial_target is not None
+                            or blessing_overflow_box is not None)
+                        else self.missing_resource_modal()
+                    )
                     if safe_area_box is not None:
                         page = "safe_area_return"
                     elif expired_notice_box is not None:
@@ -1589,6 +1691,8 @@ class GameUI:
                         page = "decompose_tutorial"
                     elif blessing_overflow_box is not None:
                         page = "blessing_overflow"
+                    elif missing_resource_info is not None:
+                        page = "missing_resource"
                     else:
                         page = "unknown"
             if page == "star_collect":
@@ -1645,6 +1749,9 @@ class GameUI:
                     return False
             elif page == "blessing_overflow":
                 if self.dismiss_blessing_overflow(box=blessing_overflow_box) is not True:
+                    return False
+            elif page == "missing_resource":
+                if self.dismiss_missing_resource_modal(info=missing_resource_info) is not True:
                     return False
             else:
                 if self.page_matches("MaaNikki_MainDetected"):
