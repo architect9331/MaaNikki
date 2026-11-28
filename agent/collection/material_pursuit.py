@@ -108,19 +108,75 @@ def _build_cumulative_region_tiers(
     return tiers
 
 
+def owned_game_ids(role: dict) -> set[int]:
+    """Return confirmed owned game_item IDs from the wardrobe snapshot."""
+    snapshot = wardrobe_snapshot(role)
+    parts = snapshot.get("parts") or {}
+    owned: set[int] = set()
+    for state in parts.values():
+        if not isinstance(state, dict):
+            continue
+        for row in state.get("items") or []:
+            if not isinstance(row, dict) or row.get("source") == "selected_card_unconfirmed":
+                continue
+            for gid in row.get("item_ids") or []:
+                if isinstance(gid, int) or str(gid).isdigit():
+                    owned.add(int(gid))
+    return owned
+
+
+def evolvable_suit_state(role: dict, crafting: dict, scoring: dict) -> tuple[set[str], set[str]]:
+    """Return ``(evolvable_suit_ids, evo_done_suit_ids)`` for 4★/5★ craftable suits needing Copy 2."""
+    owned_gids = owned_game_ids(role)
+    suit_by_id = {str(s.get("id")): s for s in (scoring.get("suits") or []) if s.get("id")}
+    suit_by_name = {str(s.get("name")): s for s in (scoring.get("suits") or []) if s.get("name")}
+    sketch_scan = (role.get("materials") or {}).get("sketch_scan") or {}
+    scan_evo_done = {str(s) for s in (sketch_scan.get("evo_crafted_suit_ids") or [])}
+
+    evolvable: set[str] = set()
+    evo_done: set[str] = set()
+    seen_suits: set[str] = set()
+    for sketch in crafting.get("sketches") or []:
+        if sketch.get("category") != "suit":
+            continue
+        suit_id = str(sketch.get("suit_id") or "")
+        suit_name = str(sketch.get("suit_name") or "")
+        key = suit_id or suit_name
+        if not key or key in seen_suits:
+            continue
+        seen_suits.add(key)
+        smeta = suit_by_id.get(suit_id) or suit_by_name.get(suit_name)
+        if not smeta:
+            continue
+        evos = [v for v in (smeta.get("variants") or []) if v.get("kind") == "evo"]
+        if not evos:
+            continue
+        evolvable.add(key)
+        if key in scan_evo_done:
+            evo_done.add(key)
+            continue
+        last_evo = max(evos, key=lambda v: int(v.get("stage") or 0))
+        evo_gids = [int(g) for g in (last_evo.get("game_items") or []) if isinstance(g, int) or str(g).isdigit()]
+        if evo_gids and all(g in owned_gids for g in evo_gids):
+            evo_done.add(key)
+    return evolvable, evo_done
+
+
 def compute_crafting_requirements_tiered(
     role: dict,
     crafting: dict,
     scoring: dict,
 ) -> tuple[dict[str, int], list[dict[str, int]]]:
-    """Return ``(totals, cumulative_tiers)`` for crafting with region filter & priority."""
+    """Return ``(totals, cumulative_tiers)`` for crafting with region filter, priority & Copy-2 evo."""
     owned = owned_score_ids(role, scoring)
+    evolvable_suits, evo_done_suits = evolvable_suit_state(role, crafting, scoring)
     materials_state = role.get("materials") or {}
     plan = materials_state.get("crafting_plan")
     mode = plan_mode(plan)
     selected = mode == "selected"
     picked = {str(sid) for sid in (plan.get("sketch_ids") or [])} if selected else set()
     scope = materials_state.get("crafting_scope", "all")
+    include_evo = bool(materials_state.get("crafting_include_evo", True))
     region_cfg = normalize_region_config(materials_state.get("crafting_regions"))
     enabled_regions = set(region_cfg["enabled"])
     all_regions = is_all_regions_enabled(region_cfg)
@@ -133,27 +189,44 @@ def compute_crafting_requirements_tiered(
         dominated = strictly_dominated_standalone_ids(scoring, uncrafted, available)
     totals: dict[str, int] = {}
     by_region: dict[str, dict[str, int]] = {}
-    for sketch in sketches:
-        sid = str(sketch["id"])
-        if sid in owned:
-            continue
-        reg = sketch_region(sketch, mat_defs)
-        if selected:
-            if sid not in picked:
-                continue
-        else:
-            if scope == "suits" and sketch.get("category") != "suit":
-                continue
-            if mode == "power" and sid in dominated:
-                continue
-            if not all_regions and reg not in enabled_regions:
-                continue
+
+    def _accumulate(sketch: dict, reg: str | None) -> None:
         bucket = by_region.setdefault(reg or "_other", {})
         for mid, cnt in (sketch.get("costs") or {}).items():
             key = str(mid)
             amount = int(cnt)
             totals[key] = totals.get(key, 0) + amount
             bucket[key] = bucket.get(key, 0) + amount
+
+    for sketch in sketches:
+        sid = str(sketch["id"])
+        reg = sketch_region(sketch, mat_defs)
+        # Copy 1
+        if sid not in owned:
+            include_c1 = False
+            if selected:
+                include_c1 = sid in picked
+            else:
+                include_c1 = (
+                    (scope != "suits" or sketch.get("category") == "suit")
+                    and not (mode == "power" and sid in dominated)
+                    and (all_regions or reg in enabled_regions)
+                )
+            if include_c1:
+                _accumulate(sketch, reg)
+
+        # Copy 2 (evolution copy for 4★/5★ craftable suits; skipped in power mode since evo adds no score)
+        if sketch.get("category") == "suit":
+            suit_key = str(sketch.get("suit_id") or sketch.get("suit_name") or "")
+            if suit_key in evolvable_suits and suit_key not in evo_done_suits:
+                evo_sid = f"evo:{sid}"
+                include_c2 = False
+                if selected:
+                    include_c2 = evo_sid in picked
+                elif mode == "all" and include_evo:
+                    include_c2 = all_regions or reg in enabled_regions
+                if include_c2:
+                    _accumulate(sketch, reg)
     # Crafting between two wardrobe reads is only known as an account-wide total,
     # so it can only be deducted from non-selected plans.
     wb_key = wardrobe_snapshot_key(role)

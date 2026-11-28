@@ -1,7 +1,7 @@
 import { upgradeCost } from './math';
 import type { RealmMaterialTarget } from './heartPresets';
 import { curveRegion, type CollectionRegion } from '../collectionRegions';
-import type { CraftingCatalog, CraftingMaterialMeta, CraftingSketch, MaterialsState, OwnedProfile, ScoringCatalog } from './types';
+import type { CraftingCatalog, CraftingMaterialMeta, CraftingSketch, MaterialsState, OwnedProfile, ScoringCatalog, SketchScanState } from './types';
 
 /** Daily active energy used as fallback when no shared assumption is supplied. */
 export const DAILY_ENERGY = 280;
@@ -96,6 +96,57 @@ export function craftingRequirement(sketches: CraftingSketch[]) {
   const required: Record<string, number> = {};
   for (const sketch of sketches) addCosts(required, sketch.costs);
   return required;
+}
+
+/**
+ * Build virtual Copy-2 (`evo:<sketchId>`) entries for 4★/5★ craftable suits whose final
+ * evolution variant is not yet owned (and not marked Copy-2-crafted by `sketch_scan`).
+ * Mirrors `agent/collection/material_pursuit.py::evolvable_suit_state`.
+ */
+export function buildPendingEvoSketches(
+  crafting: CraftingCatalog | null | undefined,
+  catalog: ScoringCatalog | null | undefined,
+  ownedGameIds: Set<string>,
+  sketchScan?: SketchScanState | null,
+): CraftingSketch[] {
+  if (!crafting?.sketches?.length || !catalog?.suits?.length) return [];
+  const suitById = new Map<string, ScoringCatalog['suits'][number]>();
+  const suitByName = new Map<string, ScoringCatalog['suits'][number]>();
+  for (const s of catalog.suits) {
+    if (s.id) suitById.set(String(s.id), s);
+    if (s.name) suitByName.set(String(s.name), s);
+  }
+  const scanEvoDone = new Set((sketchScan?.evo_crafted_suit_ids ?? []).map(String));
+  const pendingSuits = new Map<string, boolean>();
+  const result: CraftingSketch[] = [];
+
+  for (const sketch of crafting.sketches) {
+    if (sketch.category !== 'suit') continue;
+    const suitKey = String(sketch.suit_id || sketch.suit_name || '');
+    if (!suitKey) continue;
+    let needsEvo = pendingSuits.get(suitKey);
+    if (needsEvo === undefined) {
+      needsEvo = false;
+      const smeta = (sketch.suit_id ? suitById.get(String(sketch.suit_id)) : undefined)
+        ?? (sketch.suit_name ? suitByName.get(String(sketch.suit_name)) : undefined);
+      const evos = (smeta?.variants ?? []).filter((v) => v.kind === 'evo');
+      if (evos.length > 0 && !scanEvoDone.has(suitKey)) {
+        const lastEvo = evos.reduce((best, cur) => ((cur.stage ?? 0) > (best.stage ?? 0) ? cur : best), evos[0]);
+        const evoGids = (lastEvo.game_items ?? []).map(String);
+        const alreadyEvolved = evoGids.length > 0 && evoGids.every((gid) => ownedGameIds.has(gid));
+        needsEvo = !alreadyEvolved;
+      }
+      pendingSuits.set(suitKey, needsEvo);
+    }
+    if (!needsEvo) continue;
+    result.push({
+      ...sketch,
+      id: `evo:${sketch.id}`,
+      isEvoCopy: true,
+      baseSketchId: sketch.id,
+    });
+  }
+  return result;
 }
 
 export type CraftabilityStatus = 'craftable' | 'need_world' | 'missing';

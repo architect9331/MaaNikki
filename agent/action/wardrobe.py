@@ -178,6 +178,16 @@ class SketchReadAction(CustomAction):
                     else ""
                 )
                 + (
+                    f"，进化二套整套可制 {summary['game_evo_full_suit_count']} 张"
+                    if summary.get("game_evo_full_suit_count")
+                    else ""
+                )
+                + (
+                    f"，进化二套部分可制 {summary['game_evo_partial_suit_count']} 张"
+                    if summary.get("game_evo_partial_suit_count")
+                    else ""
+                )
+                + (
                     f"，其他可制（妆容/香氛/斗篷）{summary['extra_craftable_count']} 项"
                     if summary.get("extra_craftable_count")
                     else ""

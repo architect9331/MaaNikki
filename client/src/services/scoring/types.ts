@@ -129,6 +129,10 @@ export interface CraftingSketch {
   quality: number;
   part: string;
   costs: Record<string, number>;
+  /** Virtual Copy-2 entry generated client-side for evolvable 4★/5★ suits. */
+  isEvoCopy?: boolean;
+  /** Original Copy-1 sketch ID when `isEvoCopy` is true. */
+  baseSketchId?: string;
 }
 export interface CraftingCatalog {
   schema_version: number;
@@ -179,14 +183,23 @@ export interface BackpackScanSummary {
 export interface SketchScanState {
   updated_at?: string;
   complete?: boolean;
+  tall_mode?: boolean;
   /** Sketch IDs observed as unlocked in the game's 设计图 UI. */
   unlocked_ids?: string[];
-  /** Sketch IDs directly observed as craftable (standalone piece or full-suit). */
+  /** Sketch IDs directly observed as craftable (standalone piece or Copy-1 full-suit). */
   game_craftable_ids?: string[];
-  /** Uncrafted suit sketch IDs where the game showed the glowing full-suit craftable badge. */
+  /** Uncrafted Copy-1 suit sketch IDs where the game showed the glowing full-suit craftable badge. */
   game_full_suit_ids?: string[];
-  /** Uncrafted suit sketch IDs where the game showed the partial-suit craftable badge. */
+  /** Uncrafted Copy-1 suit sketch IDs where the game showed the partial-suit craftable badge. */
   game_partial_suit_ids?: string[];
+  /** Copy-2 (evolution) suit sketch IDs where the game showed the glowing full-suit craftable badge. */
+  game_evo_full_suit_ids?: string[];
+  /** Copy-2 (evolution) suit sketch IDs where the game showed the partial-suit craftable badge. */
+  game_evo_partial_suit_ids?: string[];
+  /** Suit IDs whose Copy 2 was observed as already crafted even before evolution. */
+  evo_crafted_suit_ids?: string[];
+  /** Per-suit scanned progress `[owned, total, 'base' | 'evo']` keyed by suit_id. */
+  suit_progress?: Record<string, [number, number, string]>;
   /** Extra craftable non-wardrobe blueprints (makeup / 奇想香氛 / 大喵斗篷). */
   extra_craftable?: { tab: string; name: string }[];
   scanned_count?: number;
@@ -202,6 +215,8 @@ export interface MaterialsState {
   wardrobe_baseline_key?: string;
   crafted_consumed?: Record<string, number>;
   crafting_scope?: 'all' | 'suits';
+  /** Whether 全收集 crafting includes Copy-2 (evolution copy) for 4★/5★ suits (default true). */
+  crafting_include_evo?: boolean;
   crafting_plan?: CraftingPlanState | null;
   crafting_regions?: RegionFilterConfig | null;
   renewal_scope?: RenewalScope;

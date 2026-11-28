@@ -6,6 +6,7 @@ import { buildOwnedProfile } from '@/services/scoring/profile';
 import { findDominatedStandaloneItems, normalizePlanMode } from '@/services/scoring/dominance';
 import {
   addCosts,
+  buildPendingEvoSketches,
   craftingRequirement,
   evaluateCostsCraftability,
   rankFarmableDeficits,
@@ -42,27 +43,59 @@ interface SketchGroup {
   title: string;
   quality: number;
   suit: boolean;
+  isEvoCopy: boolean;
+  suitKey?: string;
   total: number;
   missing: CraftingSketch[];
+  /** For Copy-2 groups: true when Copy 1 of every piece in this suit is already owned. */
+  baseOwnedAll: boolean;
 }
 
 function groupSketches(sketches: CraftingSketch[], ownedIds: Set<string>) {
   const map = new Map<string, SketchGroup>();
   for (const sketch of sketches) {
+    const isEvoCopy = Boolean(sketch.isEvoCopy);
     const suit = sketch.category === 'suit' && !!sketch.suit_name;
-    const key = suit ? `suit:${sketch.suit_id ?? sketch.suit_name}` : `piece:${sketch.id}`;
+    const suitKey = suit ? String(sketch.suit_id ?? sketch.suit_name) : undefined;
+    const key = isEvoCopy
+      ? `suit_evo:${suitKey ?? sketch.id}`
+      : suit
+        ? `suit:${suitKey}`
+        : `piece:${sketch.id}`;
     let group = map.get(key);
     if (!group) {
-      group = { key, title: suit ? sketch.suit_name! : sketch.name, quality: sketch.quality, suit, total: 0, missing: [] };
+      group = {
+        key,
+        title: suit ? sketch.suit_name! : sketch.name,
+        quality: sketch.quality,
+        suit,
+        isEvoCopy,
+        suitKey,
+        total: 0,
+        missing: [],
+        baseOwnedAll: true,
+      };
       map.set(key, group);
     }
     group.total++;
     group.quality = Math.max(group.quality, sketch.quality);
-    if (!ownedIds.has(sketch.id)) group.missing.push(sketch);
+    if (isEvoCopy) {
+      group.missing.push(sketch);
+      const baseId = sketch.baseSketchId ?? sketch.id.replace(/^evo:/, '');
+      if (!ownedIds.has(baseId)) group.baseOwnedAll = false;
+    } else if (!ownedIds.has(sketch.id)) {
+      group.missing.push(sketch);
+    }
   }
   return [...map.values()]
     .filter((group) => group.missing.length)
-    .sort((a, b) => b.quality - a.quality || Number(b.suit) - Number(a.suit) || a.missing.length - b.missing.length);
+    .sort(
+      (a, b) =>
+        Number(a.isEvoCopy) - Number(b.isEvoCopy) ||
+        b.quality - a.quality ||
+        Number(b.suit) - Number(a.suit) ||
+        a.missing.length - b.missing.length,
+    );
 }
 
 export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refreshToken: number; onOpenCloset: () => void }) {
@@ -72,7 +105,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   const { payload, settings, materials, loading, load, updateMaterials } = useWardrobePlanStore();
   const [search, setSearch] = useState('');
   const [quality, setQuality] = useState('all');
-  const [kind, setKind] = useState<'all' | 'suit' | 'piece' | 'dominated'>('all');
+  const [kind, setKind] = useState<'all' | 'suit' | 'evo' | 'piece' | 'dominated'>('all');
   const [listRegion, setListRegion] = useState<'all' | CollectionRegion | 'none'>('all');
   const [craftFilter, setCraftFilter] = useState<'all' | 'craftable' | 'unlocked' | 'need_world'>('all');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -94,6 +127,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
 
   const crafting = payload?.crafting_catalog;
   const scope = materials.crafting_scope ?? 'all';
+  const includeEvo = materials.crafting_include_evo !== false;
   const mode: PlanMode = normalizePlanMode(materials.crafting_plan?.mode);
   const regionCfg = useMemo(() => normalizeRegionConfig(materials.crafting_regions), [materials.crafting_regions]);
   const enabledRegions = useMemo(() => new Set(regionCfg.enabled), [regionCfg.enabled]);
@@ -103,8 +137,12 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   const profile = useMemo(() => (payload ? buildOwnedProfile(payload, settings) : null), [payload, settings]);
   const ownedIds = useMemo(() => new Set(profile?.items.map((item) => item.id) ?? []), [profile]);
 
-  // 全收集与战力共用阶段与地区范围；战力额外排除纯下位散件；自选可从全部未制设计图勾选。
+  // 全收集与战力共用阶段与地区范围；全收集可选包含4★/5★进化二套；战力不计进化二套且额外排除纯下位散件；自选可从全部未制设计图及进化二套勾选。
   const allSketches = crafting?.sketches ?? [];
+  const pendingEvoSketches = useMemo(
+    () => buildPendingEvoSketches(crafting, payload?.catalog, profile?.ownedGameIds ?? new Set(), materials.sketch_scan),
+    [crafting, payload?.catalog, profile?.ownedGameIds, materials.sketch_scan],
+  );
   const matDefs = crafting?.materials;
   const matchesRegion = (sketch: CraftingSketch) => {
     if (allRegionsOn) return true;
@@ -125,19 +163,43 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [allSketches, scope, allRegionsOn, enabledRegions, matDefs],
   );
+  const scopedEvo = useMemo(
+    () => pendingEvoSketches.filter((sketch) => matchesRegion(sketch)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pendingEvoSketches, allRegionsOn, enabledRegions, matDefs],
+  );
   const powerSketches = useMemo(() => scoped.filter((sketch) => !dominatedMap.has(sketch.id)), [scoped, dominatedMap]);
   const dominatedSketches = useMemo(
     () => (scope === 'suits' ? [] : scoped.filter((sketch) => !ownedIds.has(sketch.id) && dominatedMap.has(sketch.id))),
     [scope, scoped, ownedIds, dominatedMap],
   );
-  const effectiveKind = (mode !== 'power' || scope === 'suits') && kind === 'dominated' ? 'all' : kind;
-  const listed = mode === 'all' ? scoped : mode === 'power' ? (effectiveKind === 'dominated' ? dominatedSketches : powerSketches) : allSketches;
+  const effectiveKind =
+    (mode !== 'power' || scope === 'suits') && kind === 'dominated'
+      ? 'all'
+      : (mode === 'power' || (mode === 'all' && !includeEvo)) && kind === 'evo'
+        ? 'all'
+        : kind;
+  const listed =
+    mode === 'all'
+      ? (includeEvo ? [...scoped, ...scopedEvo] : scoped)
+      : mode === 'power'
+        ? (effectiveKind === 'dominated' ? dominatedSketches : powerSketches)
+        : [...allSketches, ...pendingEvoSketches];
   const groups = useMemo(() => groupSketches(listed, ownedIds), [listed, ownedIds]);
-  const uncraftedScoped = useMemo(() => scoped.filter((sketch) => !ownedIds.has(sketch.id)), [scoped, ownedIds]);
+  const uncraftedScoped = useMemo(
+    () => [
+      ...scoped.filter((sketch) => !ownedIds.has(sketch.id)),
+      ...(includeEvo ? scopedEvo : []),
+    ],
+    [scoped, scopedEvo, ownedIds, includeEvo],
+  );
   const uncraftedPower = useMemo(() => powerSketches.filter((sketch) => !ownedIds.has(sketch.id)), [powerSketches, ownedIds]);
   const picked = useMemo(
-    () => allSketches.filter((sketch) => selected.has(sketch.id) && !ownedIds.has(sketch.id)),
-    [allSketches, selected, ownedIds],
+    () => [
+      ...allSketches.filter((sketch) => selected.has(sketch.id) && !ownedIds.has(sketch.id)),
+      ...pendingEvoSketches.filter((sketch) => selected.has(sketch.id)),
+    ],
+    [allSketches, pendingEvoSketches, selected, ownedIds],
   );
   const planned = mode === 'all' ? uncraftedScoped : mode === 'power' ? uncraftedPower : picked;
 
@@ -151,12 +213,17 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
         if (mode === 'power' && scope !== 'suits' && dominatedMap.has(sketch.id)) continue;
         if (sketchRegion(sketch, matDefs) === reg) n++;
       }
+      if (mode === 'all' && includeEvo) {
+        for (const sketch of pendingEvoSketches) {
+          if (sketchRegion(sketch, matDefs) === reg) n++;
+        }
+      }
       counts[reg] = n > 0 ? `${n} 张` : '已齐';
     }
     return counts;
-  }, [allSketches, ownedIds, scope, mode, dominatedMap, matDefs]);
+  }, [allSketches, pendingEvoSketches, ownedIds, scope, mode, includeEvo, dominatedMap, matDefs]);
 
-  const { monsterQueue, jihuaQueue, scopePreviews } = useMemo(() => {
+  const { monsterQueue, jihuaQueue, scopePreviews, evoPreview } = useMemo(() => {
     const inv = materials.inventory ?? {};
     const snapshotKey = payload?.snapshot
       ? `${payload.snapshot.updated_at ?? ''}:${payload.snapshot.scanned_count ?? 0}`
@@ -183,19 +250,26 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
 
     const safeDaily = Math.max(10, dailyEnergy);
     const previewFor = (targetScope: 'all' | 'suits') => {
-      const items = allSketches.filter(
-        (sketch) =>
-          !ownedIds.has(sketch.id) &&
-          (targetScope === 'all' || sketch.category === 'suit') &&
-          (mode !== 'power' || targetScope === 'suits' || !dominatedMap.has(sketch.id)) &&
-          matchesRegion(sketch),
-      );
+      const items = [
+        ...allSketches.filter(
+          (sketch) =>
+            !ownedIds.has(sketch.id) &&
+            (targetScope === 'all' || sketch.category === 'suit') &&
+            (mode !== 'power' || targetScope === 'suits' || !dominatedMap.has(sketch.id)) &&
+            matchesRegion(sketch),
+        ),
+        ...(mode === 'all' && includeEvo ? scopedEvo : []),
+      ];
       const req = applyConsumed(craftingRequirement(items));
       const sum = summarizeMaterials(req, crafting, inv, payload?.catalog.material_names, safeDaily);
       const crystalEnergy = sum.rows.filter((r) => r.group === 'crystal').reduce((acc, r) => acc + r.energy, 0);
       const crystalDays = crystalEnergy > 0 ? Math.max(1, Math.ceil(crystalEnergy / safeDaily)) : 0;
       return { count: items.length, crystalEnergy, crystalDays };
     };
+    const evoReq = craftingRequirement(scopedEvo);
+    const evoSum = summarizeMaterials(evoReq, crafting, {}, payload?.catalog.material_names, safeDaily);
+    const evoCrystalEnergy = evoSum.rows.filter((r) => r.group === 'crystal').reduce((acc, r) => acc + r.energy, 0);
+    const evoSuitCount = new Set(scopedEvo.map((s) => s.suit_id || s.suit_name)).size;
     return {
       monsterQueue: monster,
       jihuaQueue: jihua,
@@ -203,9 +277,14 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
         all: previewFor('all'),
         suits: previewFor('suits'),
       },
+      evoPreview: {
+        suits: evoSuitCount,
+        pieces: scopedEvo.length,
+        crystalDays: evoCrystalEnergy > 0 ? Math.max(1, Math.ceil(evoCrystalEnergy / safeDaily)) : 0,
+      },
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planned, materials, payload, mode, crafting, allSketches, ownedIds, dominatedMap, dailyEnergy, regionOrder, allRegionsOn, enabledRegions]);
+  }, [planned, materials, payload, mode, includeEvo, crafting, allSketches, scopedEvo, ownedIds, dominatedMap, dailyEnergy, regionOrder, allRegionsOn, enabledRegions]);
 
   const { totals, realmTotals } = craftingForecast;
   const consumedTotal = Object.values(materials.crafted_consumed ?? {}).reduce((sum, value) => sum + Math.max(0, Number(value)), 0);
@@ -266,6 +345,9 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
   const gameCraftableIds = useMemo(() => new Set(sketchScan?.game_craftable_ids ?? []), [sketchScan]);
   const gameFullSuitIds = useMemo(() => new Set(sketchScan?.game_full_suit_ids ?? []), [sketchScan]);
   const gamePartialSuitIds = useMemo(() => new Set(sketchScan?.game_partial_suit_ids ?? []), [sketchScan]);
+  const gameEvoFullSuitIds = useMemo(() => new Set(sketchScan?.game_evo_full_suit_ids ?? []), [sketchScan]);
+  const gameEvoPartialSuitIds = useMemo(() => new Set(sketchScan?.game_evo_partial_suit_ids ?? []), [sketchScan]);
+  const suitProgressMap = useMemo(() => sketchScan?.suit_progress ?? {}, [sketchScan]);
   const extraCraftable = useMemo(() => sketchScan?.extra_craftable ?? [], [sketchScan]);
   const inv = useMemo(() => materials.inventory ?? {}, [materials.inventory]);
   const hasBackpackStock = Object.keys(inv).length > 0;
@@ -285,6 +367,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
     >();
     let craftablePieces = 0;
     let craftableSuits = 0;
+    let craftableEvoSuits = 0;
     let partialSuits = 0;
     let needWorldPieces = 0;
 
@@ -293,39 +376,55 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
       let uCount = 0;
       let hasNeedWorld = false;
       const suitCosts: Record<string, number> = {};
-      const gameFull = group.suit && group.missing.some((sk) => gameFullSuitIds.has(sk.id));
-      const gamePartial = group.suit && !gameFull && group.missing.some((sk) => gamePartialSuitIds.has(sk.id));
+      const baseIdOf = (sk: CraftingSketch) => sk.baseSketchId ?? sk.id;
+      const canCraftNow = !group.isEvoCopy || group.baseOwnedAll;
+      const gameFull = group.suit && canCraftNow && group.missing.some((sk) =>
+        group.isEvoCopy ? gameEvoFullSuitIds.has(baseIdOf(sk)) : gameFullSuitIds.has(sk.id),
+      );
+      const gamePartial = group.suit && canCraftNow && !gameFull && group.missing.some((sk) =>
+        group.isEvoCopy ? gameEvoPartialSuitIds.has(baseIdOf(sk)) : gamePartialSuitIds.has(sk.id),
+      );
       for (const sketch of group.missing) {
+        const rawId = baseIdOf(sketch);
         const res = evaluateCostsCraftability(sketch.costs, crafting, inv, materialNames);
-        const gameFlag = gameCraftableIds.has(sketch.id) || gameFull;
+        const gameFlag = group.isEvoCopy
+          ? gameFull
+          : (gameCraftableIds.has(sketch.id) || gameFull);
         const effectiveRes: CraftabilityResult = gameFlag
           ? { ...res, status: 'craftable' }
           : res;
         pieceMap.set(sketch.id, effectiveRes);
-        const isUnlocked = !sketchScanComplete || unlockedSketchIds.has(sketch.id) || gameFlag || gamePartial;
-        if (unlockedSketchIds.has(sketch.id) || gameFlag || gamePartial) uCount++;
-        if (effectiveRes.status === 'craftable' && isUnlocked) {
+        const isUnlocked = group.baseOwnedAll && group.isEvoCopy
+          ? true
+          : (!sketchScanComplete || unlockedSketchIds.has(rawId) || gameFlag || gamePartial);
+        if ((group.isEvoCopy && group.baseOwnedAll) || unlockedSketchIds.has(rawId) || gameFlag || gamePartial) uCount++;
+        if (canCraftNow && effectiveRes.status === 'craftable' && isUnlocked) {
           cCount++;
           craftablePieces++;
-        } else if (effectiveRes.status === 'need_world' && isUnlocked) {
+        } else if (canCraftNow && effectiveRes.status === 'need_world' && isUnlocked) {
           hasNeedWorld = true;
           needWorldPieces++;
         }
         addCosts(suitCosts, sketch.costs);
       }
-      const allUnlocked = !sketchScanComplete || uCount === group.missing.length;
-      const suitCombined = group.suit
+      const allUnlocked = (group.isEvoCopy && group.baseOwnedAll) || !sketchScanComplete || uCount === group.missing.length;
+      const suitCombined = group.suit && canCraftNow
         ? evaluateCostsCraftability(suitCosts, crafting, inv, materialNames)
         : null;
       const suitAllCraftable = Boolean(
         group.suit &&
+          canCraftNow &&
           (gameFull ||
             (allUnlocked &&
               (suitCombined?.status === 'craftable' ||
-                (cCount === group.missing.length && group.missing.every((sk) => gameCraftableIds.has(sk.id)))))),
+                (!group.isEvoCopy && cCount === group.missing.length && group.missing.every((sk) => gameCraftableIds.has(sk.id)))))),
       );
-      if (suitAllCraftable) craftableSuits++;
-      else if (group.suit && (gamePartial || cCount > 0)) partialSuits++;
+      if (suitAllCraftable) {
+        craftableSuits++;
+        if (group.isEvoCopy) craftableEvoSuits++;
+      } else if (group.suit && canCraftNow && (gamePartial || cCount > 0)) {
+        partialSuits++;
+      }
       groupMap.set(group.key, {
         craftableCount: cCount,
         suitAllCraftable,
@@ -338,7 +437,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
     return {
       pieceCraftability: pieceMap,
       groupCraftInfo: groupMap,
-      craftableSummary: { craftablePieces, craftableSuits, partialSuits, needWorldPieces },
+      craftableSummary: { craftablePieces, craftableSuits, craftableEvoSuits, partialSuits, needWorldPieces },
     };
   }, [
     groups,
@@ -350,6 +449,8 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
     gameCraftableIds,
     gameFullSuitIds,
     gamePartialSuitIds,
+    gameEvoFullSuitIds,
+    gameEvoPartialSuitIds,
   ]);
 
   const groupRegion = (group: SketchGroup): CollectionRegion | null => {
@@ -371,7 +472,9 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
       return (
         matchesCraft &&
         (quality === 'all' || String(group.quality) === quality) &&
-        (effectiveKind === 'all' || effectiveKind === 'dominated' || (effectiveKind === 'suit') === group.suit) &&
+        (effectiveKind === 'all' ||
+          effectiveKind === 'dominated' ||
+          (effectiveKind === 'evo' ? group.isEvoCopy : effectiveKind === 'suit' ? (group.suit && !group.isEvoCopy) : !group.suit)) &&
         (listRegion === 'all' || (listRegion === 'none' ? groupRegion(group) === null : groupRegion(group) === listRegion)) &&
         (!q || group.title.includes(q) || group.missing.some((sketch) => sketch.name.includes(q)))
       );
@@ -382,14 +485,15 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
         const ib = groupCraftInfo.get(b.key);
         return (
           Number(ib?.suitAllCraftable ?? false) - Number(ia?.suitAllCraftable ?? false) ||
+          Number(a.isEvoCopy) - Number(b.isEvoCopy) ||
           (ib?.craftableCount ?? 0) - (ia?.craftableCount ?? 0)
         );
       }
       return 0;
     });
-  const activeTotal = mode === 'power' ? powerSketches.length : scoped.length;
+  const activeTotal = mode === 'power' ? powerSketches.length : scoped.length + (mode === 'all' && includeEvo ? scopedEvo.length : 0);
   const madeCount = activeTotal - planned.length;
-  const scopeLabel = scope === 'suits' ? '仅成套' : '全部设计图';
+  const scopeLabel = `${scope === 'suits' ? '仅成套' : '全部设计图'}${mode === 'all' && includeEvo ? '（含进化二套）' : ''}`;
   const planLabel =
     mode === 'all'
       ? `全收集（${scopeLabel}） · ${num(planned.length)} 张未制作设计图`
@@ -452,7 +556,9 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
         }}
         modeDetail={
           mode === 'all' ? (
-            <>全部未制作的设计图，共 {num(uncraftedScoped.length)} 张；做好的衣服下次读衣柜后自动移出。</>
+            <>
+              全部未制作的设计图{includeEvo ? '及 4★/5★ 进化二套' : '（仅首套）'}，共 {num(uncraftedScoped.length)} 张；做好的衣服及已完成进化的套装下次读衣柜后自动移出。
+            </>
           ) : mode === 'power' ? (
             scope === 'suits' ? (
               <>只做套装图纸以拿齐套装加成与共鸣效果，共 {num(uncraftedPower.length)} 张（套装部件不做上位排除）。</>
@@ -503,6 +609,30 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
                         );
                       })}
                     </div>
+                    {mode === 'all' && (
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={includeEvo}
+                        title="4★ 与 5★ 奇迹套装进化需制作第二套，开启后自动计入未完成进化的第二套材料"
+                        onClick={() => updateMaterials((previous) => ({ ...previous, crafting_include_evo: !includeEvo }))}
+                        className={clsx(
+                          'rounded-lg border px-2.5 py-1.5 text-left transition-colors',
+                          includeEvo
+                            ? 'border-accent bg-accent/10 text-text-primary'
+                            : 'border-border bg-bg-primary text-text-secondary hover:bg-bg-hover',
+                        )}
+                      >
+                        <div className={clsx('text-xs font-medium', includeEvo && 'text-accent')}>
+                          {includeEvo ? '✓ 含进化二套' : '含进化二套（已关）'}
+                        </div>
+                        <div className="text-[11px] tabular-nums text-text-muted">
+                          {evoPreview.suits > 0
+                            ? `${evoPreview.suits} 套 / ${num(evoPreview.pieces)} 张 · 晶石约 ${evoPreview.crystalDays} 天`
+                            : '进化二套已齐'}
+                        </div>
+                      </button>
+                    )}
                     <span className="text-xs text-text-muted">先做套装，再按需补散件；随时切换不丢进度</span>
                   </div>
                 ),
@@ -535,7 +665,12 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
                     当前可制作{' '}
                     <strong className="tabular-nums text-success">{num(craftableSummary.craftablePieces)}</strong> 件
                     {craftableSummary.craftableSuits > 0 && (
-                      <> · 整套可制 <strong className="tabular-nums text-success">{num(craftableSummary.craftableSuits)}</strong> 套</>
+                      <>
+                        {' '}· 整套可制 <strong className="tabular-nums text-success">{num(craftableSummary.craftableSuits)}</strong> 套
+                        {craftableSummary.craftableEvoSuits > 0 && (
+                          <span className="text-text-muted">（含进化二套 {num(craftableSummary.craftableEvoSuits)} 套）</span>
+                        )}
+                      </>
                     )}
                     {craftableSummary.partialSuits > 0 && (
                       <> · 部分可制 <strong className="tabular-nums text-success">{num(craftableSummary.partialSuits)}</strong> 套</>
@@ -599,7 +734,10 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
                 </label>
                 <select aria-label="套装或散件" className={planField} value={effectiveKind} onChange={(event) => setKind(event.target.value as typeof kind)}>
                   <option value="all">套装与散件</option>
-                  <option value="suit">只看套装</option>
+                  <option value="suit">只看首套套装</option>
+                  {(mode === 'selected' || (mode === 'all' && includeEvo)) && (
+                    <option value="evo">只看进化二套</option>
+                  )}
                   <option value="piece">只看散件</option>
                   {mode === 'power' && dominatedSketches.length > 0 && (
                     <option value="dominated">已排除下位散件（{dominatedSketches.length}）</option>
@@ -685,8 +823,18 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
                       {group.suit && <ChevronRight className={clsx('h-3.5 w-3.5 shrink-0 text-text-muted transition-transform', open && 'rotate-90')} />}
                       <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[11px] font-medium text-accent">{group.quality >= 8 ? '星冕' : `${group.quality}★`}</span>
                       <span className="truncate font-medium text-text-primary">{group.title}</span>
+                      {group.isEvoCopy && (
+                        <span className="shrink-0 rounded bg-purple-500/15 px-1.5 py-0.5 text-[10px] font-medium text-purple-600 dark:text-purple-300">
+                          进化二套
+                        </span>
+                      )}
                       {!group.suit && <span className="shrink-0 text-text-muted">· {group.missing[0].part}</span>}
                     </button>
+                    {group.isEvoCopy && !group.baseOwnedAll && (
+                      <span className="shrink-0 rounded bg-bg-tertiary px-1.5 py-0.5 text-[11px] text-text-muted">
+                        需先完成首套
+                      </span>
+                    )}
                     {!group.suit && dominatedMap.has(group.missing[0].id) && (
                       <span className="shrink-0 rounded bg-bg-tertiary px-1.5 py-0.5 text-[11px] text-text-muted">
                         已被「{dominatedMap.get(group.missing[0].id)!.dominatorName}」替代
@@ -724,7 +872,9 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
                     )}
                     {group.suit && (
                       <span className="shrink-0 tabular-nums text-text-secondary">
-                        还差 {group.missing.length} / {group.total} 件
+                        {group.isEvoCopy && group.baseOwnedAll && group.suitKey && suitProgressMap[group.suitKey]?.[2] === 'evo' && suitProgressMap[group.suitKey][0] < suitProgressMap[group.suitKey][1]
+                          ? `二套进度 ${suitProgressMap[group.suitKey][0]} / ${suitProgressMap[group.suitKey][1]}`
+                          : `还差 ${group.missing.length} / ${group.total} 件`}
                       </span>
                     )}
                   </div>
@@ -732,7 +882,13 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
                     <div className="space-y-1 pb-2 pl-11 pr-4">
                       {group.missing.map((sketch) => {
                         const skCraft = pieceCraftability.get(sketch.id);
-                        const skUnlocked = !sketchScanComplete || unlockedSketchIds.has(sketch.id) || gameCraftableIds.has(sketch.id);
+                        const rawId = sketch.baseSketchId ?? sketch.id;
+                        const skUnlocked =
+                          (group.isEvoCopy && group.baseOwnedAll) ||
+                          !sketchScanComplete ||
+                          unlockedSketchIds.has(rawId) ||
+                          gameCraftableIds.has(rawId);
+                        const skReady = (!group.isEvoCopy || group.baseOwnedAll) && skCraft?.status === 'craftable';
                         return (
                           <label key={sketch.id} className="flex items-center gap-2 text-xs text-text-secondary">
                             {mode === 'selected' && (
@@ -747,7 +903,7 @@ export function WardrobeCraftingPlanner({ refreshToken, onOpenCloset }: { refres
                             <span className="min-w-0 flex-1 truncate">{sketch.name}</span>
                             {!skUnlocked ? (
                               <span className="shrink-0 text-[11px] text-text-muted">未解锁</span>
-                            ) : skCraft?.status === 'craftable' ? (
+                            ) : skReady ? (
                               <span className="shrink-0 rounded bg-success/15 px-1.5 py-0.5 text-[10px] font-medium text-success">可制作</span>
                             ) : hasBackpackStock ? (
                               <span className="max-w-48 shrink-0 truncate text-[11px] text-text-muted" title={missingHint(skCraft)}>

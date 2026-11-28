@@ -16,6 +16,7 @@ import type {
 } from './collectionForecast';
 import {
   addCosts,
+  buildPendingEvoSketches,
   buildRenewalGroups,
   craftingRequirement,
   materialGroup,
@@ -625,6 +626,8 @@ export function computeCraftingForecast(
   const ownedIds = new Set(profile.items.map((item) => item.id));
   const selected = new Set(materials.crafting_plan?.sketch_ids ?? []);
   const allSketches = crafting.sketches ?? [];
+  const includeEvo = materials.crafting_include_evo !== false;
+  const pendingEvoSketches = buildPendingEvoSketches(crafting, payload.catalog, profile.ownedGameIds, materials.sketch_scan);
   const regionCfg = normalizeRegionConfig(materials.crafting_regions);
   const enabledRegions = new Set(regionCfg.enabled);
   const allRegionsOn = isAllRegionsEnabled(regionCfg);
@@ -645,10 +648,16 @@ export function computeCraftingForecast(
   };
   const planned =
     mode === 'all'
-      ? scoped.filter((sketch) => !ownedIds.has(sketch.id) && matchesRegion(sketch))
+      ? [
+          ...scoped.filter((sketch) => !ownedIds.has(sketch.id) && matchesRegion(sketch)),
+          ...(includeEvo ? pendingEvoSketches.filter((sketch) => matchesRegion(sketch)) : []),
+        ]
       : mode === 'power'
         ? scoped.filter((sketch) => !ownedIds.has(sketch.id) && !dominated?.has(sketch.id) && matchesRegion(sketch))
-        : allSketches.filter((sketch) => selected.has(sketch.id) && !ownedIds.has(sketch.id));
+        : [
+            ...allSketches.filter((sketch) => selected.has(sketch.id) && !ownedIds.has(sketch.id)),
+            ...pendingEvoSketches.filter((sketch) => selected.has(sketch.id)),
+          ];
 
   const required = craftingRequirement(planned);
   const byRegion: Record<string, Record<string, number>> = {};
