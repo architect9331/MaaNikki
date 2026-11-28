@@ -25,8 +25,11 @@ ACCOUNT_PROMPT_HOLD_SECONDS = 8.0
 ACCOUNT_MODAL_HOLD_SECONDS = 1.5
 _STARTUP_OCR_ROI = [150, 25, 980, 690]
 _RE_WELCOME = re.compile(r"欢迎[进進]入游[戏戲]|正在[登登][录錄]")
-_RE_UPDATE_TITLE = re.compile(r"发现新版本|發現新版本")
-_RE_UPDATE_BODY = re.compile(r"资源文件.*更新|資源文件.*更新|是否更新资源|是否更新資源")
+_RE_UPDATE_TITLE = re.compile(r"发现新版本|發現新版本|资源下载|資源下載")
+_RE_UPDATE_BODY = re.compile(
+    r"资源文件.*更新|資源文件.*更新|是否更新资源|是否更新資源|"
+    r"是否下载资源|是否下載資源|本次更新.*下载|本次更新.*下載"
+)
 _RE_RESTART_TEXT = re.compile(r"更新完成.*请重启|更新完成.*請重啟")
 _RE_CONFIRM_BTN = re.compile(r"^确认$|^確認$")
 _RE_ENTER = re.compile(r"点击.*进入游戏|点击.*开始游戏|[Tt]ap.*[Ee]nter|[Cc]lick.*[Ee]nter")
@@ -36,7 +39,10 @@ _RE_ACCOUNT_MODAL = re.compile(
 )
 _RE_ACCOUNT_PROMPT = re.compile(r"注册\s*/\s*登录|註冊\s*/\s*登錄|" + _RE_ACCOUNT_MODAL.pattern)
 _RE_UPDATING = re.compile(
-    r"热更新|熱更新|正在更新|资源更新|資源更新|检查更新|檢查更新|正在下载|正在下載|正在校验|正在校驗|正在解压|正在解壓|着色器"
+    r"热更新|熱更新|正在更新|资源更新|資源更新|检查更新|檢查更新|正在下载|正在下載|"
+    r"资源下载|資源下載|下载中|下載中|正在校验|正在校驗|正在解压|正在解壓|着色器|"
+    r"\d+(?:\.\d+)?\s*(?:兆|MB|KB|GB)\s*/\s*(?:\d+(?:\.\d+)?\s*(?:兆|MB|KB|GB)|秒|s)",
+    re.IGNORECASE,
 )
 _RE_VERSION_CHECK = re.compile(r"获取资源版本|獲取資源版本|资源版本信息|資源版本信息")
 _RE_LOADING = re.compile(r"正在[进進]入奇[迹跡]大[陆陸]")

@@ -31,8 +31,8 @@
   },
   "MaaNikki_StartGame_Updating": {
     "recognition": "OCR",
-    "roi": [280, 560, 720, 155],
-    "expected": "热更新|熱更新|正在更新|资源更新|資源更新|检查更新|檢查更新|正在下载|正在下載|正在校验|正在校驗|正在解压|正在解壓|着色器",
+    "roi": [280, 540, 720, 175],
+    "expected": "热更新|熱更新|正在更新|资源更新|資源更新|检查更新|檢查更新|正在下载|正在下載|资源下载|資源下載|下载中|下載中|正在校验|正在校驗|正在解压|正在解壓|着色器",
     "action": "DoNothing"
   },
   "MaaNikki_StartGame_VersionCheck": {
@@ -62,13 +62,13 @@
   "MaaNikki_StartGame_UpdateTitle": {
     "recognition": "OCR",
     "roi": [480, 230, 320, 60],
-    "expected": "发现新版本|發現新版本",
+    "expected": "发现新版本|發現新版本|资源下载|資源下載",
     "action": "DoNothing"
   },
   "MaaNikki_StartGame_UpdateBody": {
     "recognition": "OCR",
-    "roi": [490, 305, 310, 110],
-    "expected": "资源文件.*更新|資源文件.*更新|是否更新资源|是否更新資源",
+    "roi": [420, 305, 440, 110],
+    "expected": "资源文件.*更新|資源文件.*更新|是否更新资源|是否更新資源|是否下载资源|是否下載資源|本次更新.*下载|本次更新.*下載",
     "action": "DoNothing"
   },
   "MaaNikki_StartGame_UpdateDialog": {
